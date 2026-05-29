@@ -1,6 +1,6 @@
 [SddmGreeterTheme]
 Name=sddm-theme
-Description=SDDM theme with NixOS artwork variants
+Description=SDDM theme with combinable backgrounds and layout compositions
 Author=Contributors, based on work by Keyitdev
 Website=https://github.com/W4T4r/sddm-theme
 License=GPL-3.0-or-later

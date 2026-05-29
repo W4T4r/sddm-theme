@@ -2,8 +2,9 @@
 
 SDDM theme based on
 [sddm-astronaut-theme](https://github.com/Keyitdev/sddm-astronaut-theme) by
-Keyitdev, with wallpaper variants from
-[NixOS/nixos-artwork](https://github.com/NixOS/nixos-artwork/tree/master/wallpapers).
+Keyitdev. It currently ships with a wallpaper set sourced from
+[NixOS/nixos-artwork](https://github.com/NixOS/nixos-artwork/tree/master/wallpapers),
+but the theme is intended to support additional background collections.
 
 Original project:
 
@@ -11,27 +12,30 @@ Original project:
 - Licensed under GPL-3.0-or-later
 - Repository: <https://github.com/Keyitdev/sddm-astronaut-theme>
 
-This repository contains a modified SDDM theme with selectable wallpaper
-variants and a Nix flake package.
+This repository contains a modified SDDM theme with combinable layout
+compositions, selectable wallpaper backgrounds, and packaging for both manual
+installation and Nix-based systems.
 
-## Variants
+## Compositions
 
-The default variant is `nixos-gear`.
+The default composition is `center`.
 
-Available variants:
+Available compositions:
 
-- `nixos-binary-black`
-- `nixos-binary-blue`
-- `nixos-catppuccin-macchiato`
-- `nixos-catppuccin-mocha`
-- `nixos-gear`
-- `nixos-moonscape`
-- `nixos-mosaic-blue`
-- `nixos-nineish-dark-gray`
-- `nixos-recursive`
-- `nixos-simple-dark-gray`
-- `nixos-waterfall`
-- `nixos-watersplash`
+- `center`
+- `left`
+- `right`
+
+## Backgrounds
+
+The default background is `nixos-gear`.
+
+Backgrounds are discovered automatically from `Backgrounds/`. The background
+ID is the filename without its extension, so `Backgrounds/neon-city.webp`
+becomes `neon-city`.
+
+Keep background IDs unique. For example, do not add both `neon-city.png` and
+`neon-city.webp`.
 
 ## Previews
 
@@ -54,7 +58,12 @@ Available variants:
 Supported background formats follow the upstream theme: `png`, `jpg`, `jpeg`,
 `webp`, `gif`, `avi`, `mp4`, `mov`, `mkv`, `m4v`, and `webm`.
 
-Generate static comparison previews:
+Add a background by placing a supported file in `Backgrounds/`. If you also add
+`Previews/<background-id>.png`, SDDM metadata uses that preview image. Otherwise
+static image backgrounds use the background itself as the screenshot, and video
+backgrounds fall back to the default preview.
+
+Generate static comparison previews for image backgrounds:
 
 ```sh
 tools/preview-variants.sh
@@ -88,7 +97,7 @@ Then install and select it in NixOS:
 }
 ```
 
-Or import the included NixOS module and select a variant:
+Or import the included NixOS module and select a composition and background:
 
 ```nix
 { inputs, ... }: {
@@ -97,13 +106,18 @@ Or import the included NixOS module and select a variant:
   ];
 
   services.sddmTheme.enable = true;
-  services.sddmTheme.variant = "nixos-catppuccin-mocha";
+  services.sddmTheme.composition = "left";
+  services.sddmTheme.background = "nixos-catppuccin-mocha";
 }
 ```
 
 The module installs the theme package, sets
-`services.displayManager.sddm.theme = "sddm-theme"`, and patches
-`metadata.desktop` to point at the selected variant.
+`services.displayManager.sddm.theme = "sddm-theme"`, generates
+`Themes/selected.conf` from the selected composition and background, and
+patches `metadata.desktop` to point at it.
+
+`services.sddmTheme.variant` is still accepted as a deprecated alias for
+`services.sddmTheme.background`.
 
 ## Manual Installation
 
@@ -146,6 +160,13 @@ Preview:
 
 ```sh
 sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/sddm-theme/
+```
+
+The installer menu can also install the theme and select a composition and
+background interactively:
+
+```sh
+./setup.sh
 ```
 
 ## License

@@ -15,12 +15,15 @@ readonly PATH_TO_GIT_CLONE="$HOME/$THEME_NAME"
 readonly METADATA="$THEMES_DIR/$THEME_NAME/metadata.desktop"
 readonly DATE=$(date +%s)
 
-readonly -a THEMES=(
-    "nixos-binary-black" "nixos-binary-blue"
-    "nixos-catppuccin-macchiato" "nixos-catppuccin-mocha"
-    "nixos-gear" "nixos-moonscape" "nixos-mosaic-blue"
-    "nixos-nineish-dark-gray" "nixos-recursive"
-    "nixos-simple-dark-gray" "nixos-waterfall" "nixos-watersplash"
+readonly DEFAULT_COMPOSITION="center"
+readonly DEFAULT_BACKGROUND="nixos-gear"
+
+readonly -a COMPOSITIONS=(
+    "center" "left" "right"
+)
+
+readonly -a SUPPORTED_BACKGROUND_EXTENSIONS=(
+    "png" "jpg" "jpeg" "webp" "gif" "avi" "mp4" "mov" "mkv" "m4v" "webm"
 )
 
 # Logging with gum fallback
@@ -152,13 +155,163 @@ install_theme() {
     info "Theme installed"
 }
 
-# Select theme variant
+# Config helpers
+set_conf_value() {
+    local file="$1"
+    local key="$2"
+    local value="$3"
+
+    sed -i "s|^${key}=.*|${key}=\"${value}\"|" "$file"
+}
+
+is_supported_background_file() {
+    local file="$1"
+    local name
+    local ext
+
+    name=$(basename "$file")
+    ext="${name##*.}"
+    [[ "$name" == "$ext" ]] && return 1
+    ext="${ext,,}"
+
+    for supported in "${SUPPORTED_BACKGROUND_EXTENSIONS[@]}"; do
+        [[ "$ext" == "$supported" ]] && return 0
+    done
+
+    return 1
+}
+
+background_id_from_file() {
+    local name
+    name=$(basename "$1")
+    echo "${name%.*}"
+}
+
+list_backgrounds() {
+    local theme_root="$1"
+    local file
+
+    [[ ! -d "$theme_root/Backgrounds" ]] && return 0
+
+    while IFS= read -r -d '' file; do
+        is_supported_background_file "$file" && background_id_from_file "$file"
+    done < <(find "$theme_root/Backgrounds" -maxdepth 1 -type f -print0) | sort -u
+}
+
+background_file_for_id() {
+    local theme_root="$1"
+    local background="$2"
+    local file
+
+    [[ ! -d "$theme_root/Backgrounds" ]] && return 1
+
+    while IFS= read -r -d '' file; do
+        if is_supported_background_file "$file" && [[ "$(background_id_from_file "$file")" == "$background" ]]; then
+            echo "$file"
+            return 0
+        fi
+    done < <(find "$theme_root/Backgrounds" -maxdepth 1 -type f -print0)
+
+    return 1
+}
+
+metadata_screenshot_for_background() {
+    local theme_root="$1"
+    local background="$2"
+    local background_path="$3"
+    local ext="${background_path##*.}"
+
+    ext="${ext,,}"
+
+    if [[ -f "$theme_root/Previews/${background}.png" ]]; then
+        echo "Previews/${background}.png"
+    elif [[ "$ext" == "png" || "$ext" == "jpg" || "$ext" == "jpeg" || "$ext" == "webp" ]]; then
+        echo "$background_path"
+    else
+        echo "Previews/${DEFAULT_BACKGROUND}.png"
+    fi
+}
+
+apply_composition() {
+    local file="$1"
+    local composition="$2"
+
+    case "$composition" in
+        center)
+            set_conf_value "$file" "PartialBlur" "true"
+            set_conf_value "$file" "FullBlur" ""
+            set_conf_value "$file" "HaveFormBackground" "false"
+            set_conf_value "$file" "FormPosition" "center"
+            set_conf_value "$file" "VirtualKeyboardPosition" "center"
+            ;;
+        left)
+            set_conf_value "$file" "PartialBlur" "false"
+            set_conf_value "$file" "FullBlur" ""
+            set_conf_value "$file" "HaveFormBackground" "true"
+            set_conf_value "$file" "FormPosition" "left"
+            set_conf_value "$file" "VirtualKeyboardPosition" "left"
+            ;;
+        right)
+            set_conf_value "$file" "PartialBlur" "false"
+            set_conf_value "$file" "FullBlur" ""
+            set_conf_value "$file" "HaveFormBackground" "true"
+            set_conf_value "$file" "FormPosition" "right"
+            set_conf_value "$file" "VirtualKeyboardPosition" "right"
+            ;;
+        *)
+            error "Unknown composition: $composition"
+            return 1
+            ;;
+    esac
+}
+
+write_selected_theme() {
+    local theme_root="$1"
+    local composition="$2"
+    local background="$3"
+    local template="$theme_root/Themes/${DEFAULT_BACKGROUND}.conf"
+    local output="$theme_root/Themes/selected.conf"
+    local background_file
+    local background_path
+    local screenshot
+    local tmp
+
+    [[ ! -f "$template" ]] && { error "Template config not found: $template"; return 1; }
+    background_file=$(background_file_for_id "$theme_root" "$background") || { error "Background not found: $background"; return 1; }
+    background_path="${background_file#"$theme_root"/}"
+    screenshot=$(metadata_screenshot_for_background "$theme_root" "$background" "$background_path")
+
+    tmp=$(mktemp)
+    cp "$template" "$tmp"
+
+    set_conf_value "$tmp" "Background" "$background_path"
+    apply_composition "$tmp" "$composition"
+
+    sudo install -m 0644 "$tmp" "$output"
+    rm -f "$tmp"
+
+    sudo sed -i \
+        -e "s|^ConfigFile=.*|ConfigFile=Themes/selected.conf|" \
+        -e "s|^Screenshot=.*|Screenshot=${screenshot}|" \
+        "$METADATA"
+}
+
+# Select theme composition and background
 select_theme() {
     [[ ! -f "$METADATA" ]] && { error "Install theme first"; return 1; }
-    
-    local theme=$(choose "${THEMES[@]}" || echo "nixos-gear")
-    sudo sed -i "s|^ConfigFile=.*|ConfigFile=Themes/${theme}.conf|" "$METADATA"
-    info "Selected theme: $theme"
+
+    local composition
+    local background
+    local -a backgrounds
+
+    composition=$(choose "${COMPOSITIONS[@]}" || echo "$DEFAULT_COMPOSITION")
+    mapfile -t backgrounds < <(list_backgrounds "$THEMES_DIR/$THEME_NAME")
+    [[ ${#backgrounds[@]} -eq 0 ]] && { error "No supported backgrounds found"; return 1; }
+    background=$(choose "${backgrounds[@]}" || echo "$DEFAULT_BACKGROUND")
+
+    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background"
+    info "Selected composition: $composition"
+    info "Selected background: $background"
 }
 
 _disable_dm_systemd() {
@@ -283,7 +436,7 @@ enable_sddm() {
 preview_theme(){
     local log_file="/tmp/${THEME_NAME}_$DATE.txt"
     
-    sddm-greeter-qt6 --test-mode --theme "$THEMES_DIR/$THEME_NAME/" > $log_file 2>&1 &
+    sddm-greeter-qt6 --test-mode --theme "$THEMES_DIR/$THEME_NAME/" > "$log_file" 2>&1 &
     greeter_pid=$!
 
     # wait for ten seconds
@@ -299,8 +452,8 @@ preview_theme(){
     fi
 
 
-    local theme="$(sed -n 's|^ConfigFile=Themes/\(.*\)\.conf|\1|p' $METADATA)"
-    info "Preview closed ($theme theme found)." 
+    local theme="$(sed -n 's|^ConfigFile=Themes/\(.*\)\.conf|\1|p' "$METADATA")"
+    info "Preview closed ($theme config found)."
     info "Log file: $log_file"
 }
 
@@ -324,7 +477,7 @@ main() {
             "📥 Clone Repository" \
             "📂 Install Theme" \
             "🔧 Enable SDDM Service" \
-            "🎨 Select Theme Variant" \
+            "🎨 Select Composition and Background" \
             "✨ Preview the set theme" \
             "❌ Exit")
 
@@ -334,7 +487,7 @@ main() {
             "📥 Clone Repository") clone_repo ;;
             "📂 Install Theme") install_theme ;;
             "🔧 Enable SDDM Service") enable_sddm ;;
-            "🎨 Select Theme Variant") select_theme ;;
+            "🎨 Select Composition and Background") select_theme ;;
             "✨ Preview the set theme") preview_theme;;
             "❌ Exit") info "Goodbye!"; exit 0 ;;
         esac

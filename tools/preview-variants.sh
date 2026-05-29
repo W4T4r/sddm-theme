@@ -14,19 +14,24 @@ else
   exit 1
 fi
 
-for theme in "$repo_root"/Themes/*.conf; do
-  name="$(basename "$theme" .conf)"
-  background="$(
-    sed -n 's/^Background="\([^"]*\)"/\1/p' "$theme" |
-      sed -n '1p'
-  )"
+is_preview_source() {
+  local file="$1"
+  local ext="${file##*.}"
 
-  if [[ -z "$background" || ! -f "$repo_root/$background" ]]; then
-    echo "skip $name: background not found" >&2
+  ext="${ext,,}"
+  [[ "$ext" == "png" || "$ext" == "jpg" || "$ext" == "jpeg" || "$ext" == "webp" || "$ext" == "gif" ]]
+}
+
+while IFS= read -r -d '' background_file; do
+  name="$(basename "$background_file")"
+  name="${name%.*}"
+
+  if ! is_preview_source "$background_file"; then
+    echo "skip $name: unsupported preview format" >&2
     continue
   fi
 
-  "${magick_cmd[@]}" "$repo_root/$background" \
+  "${magick_cmd[@]}" "$background_file" \
     -resize '1280x720^' \
     -gravity center \
     -extent 1280x720 \
@@ -46,4 +51,4 @@ for theme in "$repo_root"/Themes/*.conf; do
     "$preview_dir/$name.png"
 
   echo "$preview_dir/$name.png"
-done
+done < <(find "$repo_root/Backgrounds" -maxdepth 1 -type f -print0)
