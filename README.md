@@ -26,6 +26,10 @@ Available compositions:
 - `left`
 - `right`
 
+| `center` | `left` | `right` |
+| --- | --- | --- |
+| ![center composition](./Previews/composition-center.png) | ![left composition](./Previews/composition-left.png) | ![right composition](./Previews/composition-right.png) |
+
 ## Backgrounds
 
 The default background is `nixos-gear`.
@@ -37,7 +41,7 @@ becomes `neon-city`.
 Keep background IDs unique. For example, do not add both `neon-city.png` and
 `neon-city.webp`.
 
-## Previews
+### Bundled Backgrounds
 
 | `nixos-binary-black` | `nixos-binary-blue` | `nixos-catppuccin-macchiato` |
 | --- | --- | --- |
@@ -69,6 +73,32 @@ Generate static comparison previews for image backgrounds:
 tools/preview-variants.sh
 ```
 
+## Fonts
+
+The default font is `Open Sans`.
+
+Bundled font families:
+
+| Family | Preview |
+| --- | --- |
+| `Open Sans` | ![Open Sans](./Previews/font-open-sans.png) |
+| `ArcadeClassic` | ![ArcadeClassic](./Previews/font-arcadeclassic.png) |
+| `ESPACION` | ![ESPACION](./Previews/font-espacion.png) |
+| `Electroharmonix` | ![Electroharmonix](./Previews/font-electroharmonix.png) |
+| `Fragile Bombers` | ![Fragile Bombers](./Previews/font-fragile-bombers.png) |
+| `Fragile Bombers Attack` | ![Fragile Bombers Attack](./Previews/font-fragile-bombers-attack.png) |
+| `Fragile Bombers Down` | ![Fragile Bombers Down](./Previews/font-fragile-bombers-down.png) |
+| `KogniGear` | ![KogniGear](./Previews/font-kognigear.png) |
+| `Orbitron` | ![Orbitron](./Previews/font-orbitron.png) |
+| `Pixelon` | ![Pixelon](./Previews/font-pixelon.png) |
+| `Thunderman` | ![Thunderman](./Previews/font-thunderman.png) |
+
+Regenerate font previews:
+
+```sh
+tools/preview-fonts.sh
+```
+
 ## Nix Usage
 
 Build the theme package:
@@ -97,7 +127,8 @@ Then install and select it in NixOS:
 }
 ```
 
-Or import the included NixOS module and select a composition and background:
+Or import the included NixOS module and select a composition, background, and
+font:
 
 ```nix
 { inputs, ... }: {
@@ -108,12 +139,13 @@ Or import the included NixOS module and select a composition and background:
   services.sddmTheme.enable = true;
   services.sddmTheme.composition = "left";
   services.sddmTheme.background = "nixos-catppuccin-mocha";
+  services.sddmTheme.font = "Orbitron";
 }
 ```
 
 The module installs the theme package, sets
 `services.displayManager.sddm.theme = "sddm-theme"`, generates
-`Themes/selected.conf` from the selected composition and background, and
+`Themes/selected.conf` from the selected composition, background, and font, and
 patches `metadata.desktop` to point at it.
 
 `services.sddmTheme.variant` is still accepted as a deprecated alias for
@@ -162,8 +194,8 @@ Preview:
 sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/sddm-theme/
 ```
 
-The installer menu can also install the theme and select a composition and
-background interactively:
+The installer menu can also install the theme and select a composition,
+background, and font interactively:
 
 ```sh
 ./setup.sh

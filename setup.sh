@@ -17,9 +17,16 @@ readonly DATE=$(date +%s)
 
 readonly DEFAULT_COMPOSITION="center"
 readonly DEFAULT_BACKGROUND="nixos-gear"
+readonly DEFAULT_FONT="Open Sans"
 
 readonly -a COMPOSITIONS=(
     "center" "left" "right"
+)
+
+readonly -a FONTS=(
+    "Open Sans" "ArcadeClassic" "ESPACION" "Electroharmonix"
+    "Fragile Bombers" "Fragile Bombers Attack" "Fragile Bombers Down"
+    "KogniGear" "Orbitron" "Pixelon" "Thunderman"
 )
 
 readonly -a SUPPORTED_BACKGROUND_EXTENSIONS=(
@@ -269,6 +276,7 @@ write_selected_theme() {
     local theme_root="$1"
     local composition="$2"
     local background="$3"
+    local font="$4"
     local template="$theme_root/Themes/${DEFAULT_BACKGROUND}.conf"
     local output="$theme_root/Themes/selected.conf"
     local background_file
@@ -285,6 +293,7 @@ write_selected_theme() {
     cp "$template" "$tmp"
 
     set_conf_value "$tmp" "Background" "$background_path"
+    set_conf_value "$tmp" "Font" "$font"
     apply_composition "$tmp" "$composition"
 
     sudo install -m 0644 "$tmp" "$output"
@@ -296,22 +305,25 @@ write_selected_theme() {
         "$METADATA"
 }
 
-# Select theme composition and background
+# Select theme composition, background, and font
 select_theme() {
     [[ ! -f "$METADATA" ]] && { error "Install theme first"; return 1; }
 
     local composition
     local background
+    local font
     local -a backgrounds
 
     composition=$(choose "${COMPOSITIONS[@]}" || echo "$DEFAULT_COMPOSITION")
     mapfile -t backgrounds < <(list_backgrounds "$THEMES_DIR/$THEME_NAME")
     [[ ${#backgrounds[@]} -eq 0 ]] && { error "No supported backgrounds found"; return 1; }
     background=$(choose "${backgrounds[@]}" || echo "$DEFAULT_BACKGROUND")
+    font=$(choose "${FONTS[@]}" || echo "$DEFAULT_FONT")
 
-    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background"
+    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background" "$font"
     info "Selected composition: $composition"
     info "Selected background: $background"
+    info "Selected font: $font"
 }
 
 _disable_dm_systemd() {
@@ -477,7 +489,7 @@ main() {
             "📥 Clone Repository" \
             "📂 Install Theme" \
             "🔧 Enable SDDM Service" \
-            "🎨 Select Composition and Background" \
+            "🎨 Select Composition, Background, and Font" \
             "✨ Preview the set theme" \
             "❌ Exit")
 
@@ -487,7 +499,7 @@ main() {
             "📥 Clone Repository") clone_repo ;;
             "📂 Install Theme") install_theme ;;
             "🔧 Enable SDDM Service") enable_sddm ;;
-            "🎨 Select Composition and Background") select_theme ;;
+            "🎨 Select Composition, Background, and Font") select_theme ;;
             "✨ Preview the set theme") preview_theme;;
             "❌ Exit") info "Goodbye!"; exit 0 ;;
         esac

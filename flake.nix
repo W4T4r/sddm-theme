@@ -15,6 +15,20 @@
       themeName = "sddm-theme";
       defaultComposition = "center";
       defaultBackground = "nixos-gear";
+      defaultFont = "Open Sans";
+      fontFamilies = [
+        "Open Sans"
+        "ArcadeClassic"
+        "ESPACION"
+        "Electroharmonix"
+        "Fragile Bombers"
+        "Fragile Bombers Attack"
+        "Fragile Bombers Down"
+        "KogniGear"
+        "Orbitron"
+        "Pixelon"
+        "Thunderman"
+      ];
       supportedBackgroundExtensions = [
         "png"
         "jpg"
@@ -107,6 +121,7 @@
         {
           background ? null,
           composition ? defaultComposition,
+          font ? defaultFont,
           variant ? null,
         }:
         let
@@ -131,6 +146,7 @@
               "Previews/${defaultBackground}.png";
           selectedSettings = compositionSettings.${selectedComposition} // {
             Background = selectedBackgroundPath;
+            Font = font;
           };
           setSelectedConfig = pkgs.lib.concatStringsSep "\n" (
             pkgs.lib.mapAttrsToList (key: value: ''
@@ -139,6 +155,7 @@
           );
         in
         assert builtins.elem selectedBackground backgrounds;
+        assert builtins.elem font fontFamilies;
         assert builtins.hasAttr defaultBackground backgroundFileById;
         assert builtins.hasAttr selectedComposition compositionSettings;
         pkgs.stdenvNoCC.mkDerivation {
@@ -189,7 +206,7 @@
             if cfg.package == null then
               self.lib.mkSddmTheme pkgs {
                 background = selectedBackground;
-                inherit (cfg) composition;
+                inherit (cfg) composition font;
               }
             else
               cfg.package;
@@ -210,6 +227,12 @@
               description = "Theme background artwork.";
             };
 
+            font = lib.mkOption {
+              type = lib.types.enum fontFamilies;
+              default = defaultFont;
+              description = "Theme font family.";
+            };
+
             variant = lib.mkOption {
               type = lib.types.nullOr (lib.types.enum backgrounds);
               default = null;
@@ -219,7 +242,7 @@
             package = lib.mkOption {
               type = lib.types.nullOr lib.types.package;
               default = null;
-              description = "The SDDM theme package to install. If null, a package is generated from the selected composition and background.";
+              description = "The SDDM theme package to install. If null, a package is generated from the selected composition, background, and font.";
             };
           };
 
@@ -238,6 +261,8 @@
           compositions
           defaultBackground
           defaultComposition
+          defaultFont
+          fontFamilies
           variants
           defaultVariant
           ;
