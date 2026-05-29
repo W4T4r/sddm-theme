@@ -1,0 +1,15 @@
+[SddmGreeterTheme]
+Name=sddm-theme
+Description=SDDM theme with NixOS artwork variants
+Author=Contributors, based on work by Keyitdev
+Website=https://github.com/W4T4r/sddm-theme
+License=GPL-3.0-or-later
+Type=sddm-theme
+Version=0.1.0
+ConfigFile=Themes/nixos-gear.conf
+Screenshot=Previews/nixos-gear.png
+MainScript=Main.qml
+TranslationsDirectory=translations
+Theme-Id=sddm-theme
+Theme-API=2.0
+QtVersion=6
