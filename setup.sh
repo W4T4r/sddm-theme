@@ -20,10 +20,13 @@ readonly DEFAULT_FORM_STYLE="solid"
 readonly DEFAULT_BACKGROUND="nixos-gear"
 readonly DEFAULT_BACKGROUND_PLACEMENT="fill"
 readonly DEFAULT_FONT="Open Sans"
-readonly DEFAULT_BACKGROUND_DIM="none"
-readonly DEFAULT_BLUR_STRENGTH="normal"
-readonly DEFAULT_FONT_SIZE="normal"
-readonly DEFAULT_ROUND_CORNERS="normal"
+readonly DEFAULT_BACKGROUND_DIM="0.0"
+readonly DEFAULT_BACKGROUND_COLOR="#21222C"
+readonly DEFAULT_FORM_BACKGROUND_COLOR="#21222C"
+readonly DEFAULT_BLUR_AMOUNT="2.0"
+readonly DEFAULT_BLUR_MAX="48"
+readonly DEFAULT_FONT_SIZE="13"
+readonly DEFAULT_ROUND_CORNERS="20"
 readonly DEFAULT_CLOCK_FORMAT="24h"
 
 readonly -a COMPOSITIONS=(
@@ -43,22 +46,6 @@ readonly -a FONTS=(
     "Open Sans" "ArcadeClassic" "ESPACION" "Electroharmonix"
     "Fragile Bombers" "Fragile Bombers Attack" "Fragile Bombers Down"
     "KogniGear" "Orbitron" "Pixelon" "Thunderman"
-)
-
-readonly -a BACKGROUND_DIMS=(
-    "none" "light" "medium" "dark"
-)
-
-readonly -a BLUR_STRENGTHS=(
-    "soft" "normal" "strong"
-)
-
-readonly -a FONT_SIZES=(
-    "small" "normal" "large"
-)
-
-readonly -a ROUND_CORNERS=(
-    "none" "small" "normal" "large"
 )
 
 readonly -a CLOCK_FORMATS=(
@@ -108,6 +95,20 @@ choose() {
         gum choose --cursor.foreground 12 --header="" --header.foreground 12 "$@"
     else
         select opt in "$@"; do [[ -n "$opt" ]] && { echo "$opt"; break; }; done
+    fi
+}
+
+input_value() {
+    local prompt="$1"
+    local default="$2"
+
+    if command -v gum &>/dev/null; then
+        gum input --prompt "$prompt " --value "$default"
+    else
+        local value
+        echo -n "$prompt [$default]: "
+        read -r value
+        echo "${value:-$default}"
     fi
 }
 
@@ -205,6 +206,31 @@ set_conf_value() {
     local value="$3"
 
     sed -i "s|^${key}=.*|${key}=\"${value}\"|" "$file"
+}
+
+number_in_range() {
+    local value="$1"
+    local min="$2"
+    local max="$3"
+    local max_inclusive="$4"
+
+    awk -v value="$value" -v min="$min" -v max="$max" -v max_inclusive="$max_inclusive" '
+        value !~ /^-?[0-9]+([.][0-9]+)?$/ { exit 1 }
+        max_inclusive == "true" && value >= min && value <= max { exit 0 }
+        max_inclusive != "true" && value >= min && value < max { exit 0 }
+        { exit 1 }
+    '
+}
+
+number_at_least() {
+    local value="$1"
+    local min="$2"
+
+    awk -v value="$value" -v min="$min" '
+        value !~ /^-?[0-9]+([.][0-9]+)?$/ { exit 1 }
+        value >= min { exit 0 }
+        { exit 1 }
+    '
 }
 
 is_supported_background_file() {
@@ -386,49 +412,28 @@ apply_background_placement() {
 apply_advanced_settings() {
     local file="$1"
     local background_dim="$2"
-    local blur_strength="$3"
-    local font_size="$4"
-    local round_corners="$5"
-    local clock_format="$6"
+    local background_color="$3"
+    local form_background_color="$4"
+    local blur_amount="$5"
+    local blur_max="$6"
+    local font_size="$7"
+    local round_corners="$8"
+    local clock_format="$9"
 
-    case "$background_dim" in
-        none) set_conf_value "$file" "DimBackground" "0.0" ;;
-        light) set_conf_value "$file" "DimBackground" "0.2" ;;
-        medium) set_conf_value "$file" "DimBackground" "0.4" ;;
-        dark) set_conf_value "$file" "DimBackground" "0.6" ;;
-        *) error "Unknown background dim: $background_dim"; return 1 ;;
-    esac
+    number_in_range "$background_dim" "0.0" "1.0" "true" || { error "background.dim must be between 0.0 and 1.0"; return 1; }
+    number_in_range "$blur_amount" "0.0" "3.0" "false" || { error "form.blur.amount must be at least 0.0 and less than 3.0"; return 1; }
+    number_at_least "$blur_max" "2" || { error "form.blur.max must be at least 2"; return 1; }
+    number_at_least "$font_size" "0.000001" || { error "font.size must be positive"; return 1; }
+    number_at_least "$round_corners" "0" || { error "roundCorners must be at least 0"; return 1; }
 
-    case "$blur_strength" in
-        soft)
-            set_conf_value "$file" "Blur" "1.0"
-            set_conf_value "$file" "BlurMax" "32"
-            ;;
-        normal)
-            set_conf_value "$file" "Blur" "2.0"
-            set_conf_value "$file" "BlurMax" "48"
-            ;;
-        strong)
-            set_conf_value "$file" "Blur" "2.8"
-            set_conf_value "$file" "BlurMax" "64"
-            ;;
-        *) error "Unknown blur strength: $blur_strength"; return 1 ;;
-    esac
-
-    case "$font_size" in
-        small) set_conf_value "$file" "FontSize" "11" ;;
-        normal) set_conf_value "$file" "FontSize" "13" ;;
-        large) set_conf_value "$file" "FontSize" "16" ;;
-        *) error "Unknown font size: $font_size"; return 1 ;;
-    esac
-
-    case "$round_corners" in
-        none) set_conf_value "$file" "RoundCorners" "0" ;;
-        small) set_conf_value "$file" "RoundCorners" "12" ;;
-        normal) set_conf_value "$file" "RoundCorners" "20" ;;
-        large) set_conf_value "$file" "RoundCorners" "28" ;;
-        *) error "Unknown round corners: $round_corners"; return 1 ;;
-    esac
+    set_conf_value "$file" "DimBackground" "$background_dim"
+    set_conf_value "$file" "BackgroundColor" "$background_color"
+    set_conf_value "$file" "DimBackgroundColor" "$background_color"
+    set_conf_value "$file" "FormBackgroundColor" "$form_background_color"
+    set_conf_value "$file" "Blur" "$blur_amount"
+    set_conf_value "$file" "BlurMax" "$blur_max"
+    set_conf_value "$file" "FontSize" "$font_size"
+    set_conf_value "$file" "RoundCorners" "$round_corners"
 
     case "$clock_format" in
         24h)
@@ -459,10 +464,13 @@ write_selected_theme() {
     local background_placement="$5"
     local font="$6"
     local background_dim="$7"
-    local blur_strength="$8"
-    local font_size="$9"
-    local round_corners="${10}"
-    local clock_format="${11}"
+    local background_color="$8"
+    local form_background_color="$9"
+    local blur_amount="${10}"
+    local blur_max="${11}"
+    local font_size="${12}"
+    local round_corners="${13}"
+    local clock_format="${14}"
     local template="$theme_root/Themes/${DEFAULT_BACKGROUND}.conf"
     local output="$theme_root/Themes/selected.conf"
     local background_file
@@ -483,7 +491,7 @@ write_selected_theme() {
     apply_composition "$tmp" "$composition"
     apply_form_style "$tmp" "$form_style"
     apply_background_placement "$tmp" "$background_placement"
-    apply_advanced_settings "$tmp" "$background_dim" "$blur_strength" "$font_size" "$round_corners" "$clock_format"
+    apply_advanced_settings "$tmp" "$background_dim" "$background_color" "$form_background_color" "$blur_amount" "$blur_max" "$font_size" "$round_corners" "$clock_format"
 
     sudo install -m 0644 "$tmp" "$output"
     rm -f "$tmp"
@@ -504,7 +512,10 @@ select_theme() {
     local background_placement
     local font
     local background_dim="$DEFAULT_BACKGROUND_DIM"
-    local blur_strength="$DEFAULT_BLUR_STRENGTH"
+    local background_color="$DEFAULT_BACKGROUND_COLOR"
+    local form_background_color="$DEFAULT_FORM_BACKGROUND_COLOR"
+    local blur_amount="$DEFAULT_BLUR_AMOUNT"
+    local blur_max="$DEFAULT_BLUR_MAX"
     local font_size="$DEFAULT_FONT_SIZE"
     local round_corners="$DEFAULT_ROUND_CORNERS"
     local clock_format="$DEFAULT_CLOCK_FORMAT"
@@ -519,21 +530,27 @@ select_theme() {
     font=$(choose "${FONTS[@]}" || echo "$DEFAULT_FONT")
 
     if confirm "Configure advanced options?"; then
-        background_dim=$(choose "${BACKGROUND_DIMS[@]}" || echo "$DEFAULT_BACKGROUND_DIM")
-        blur_strength=$(choose "${BLUR_STRENGTHS[@]}" || echo "$DEFAULT_BLUR_STRENGTH")
-        font_size=$(choose "${FONT_SIZES[@]}" || echo "$DEFAULT_FONT_SIZE")
-        round_corners=$(choose "${ROUND_CORNERS[@]}" || echo "$DEFAULT_ROUND_CORNERS")
+        background_dim=$(input_value "background.dim" "$DEFAULT_BACKGROUND_DIM")
+        background_color=$(input_value "background.color" "$DEFAULT_BACKGROUND_COLOR")
+        form_background_color=$(input_value "form.background.color" "$DEFAULT_FORM_BACKGROUND_COLOR")
+        blur_amount=$(input_value "form.blur.amount" "$DEFAULT_BLUR_AMOUNT")
+        blur_max=$(input_value "form.blur.max" "$DEFAULT_BLUR_MAX")
+        font_size=$(input_value "font.size" "$DEFAULT_FONT_SIZE")
+        round_corners=$(input_value "roundCorners" "$DEFAULT_ROUND_CORNERS")
         clock_format=$(choose "${CLOCK_FORMATS[@]}" || echo "$DEFAULT_CLOCK_FORMAT")
     fi
 
-    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background" "$form_style" "$background_placement" "$font" "$background_dim" "$blur_strength" "$font_size" "$round_corners" "$clock_format"
+    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background" "$form_style" "$background_placement" "$font" "$background_dim" "$background_color" "$form_background_color" "$blur_amount" "$blur_max" "$font_size" "$round_corners" "$clock_format"
     info "Selected composition: $composition"
     info "Selected form style: $form_style"
     info "Selected background: $background"
     info "Selected background placement: $background_placement"
     info "Selected font: $font"
     info "Selected background dim: $background_dim"
-    info "Selected blur strength: $blur_strength"
+    info "Selected background color: $background_color"
+    info "Selected form background color: $form_background_color"
+    info "Selected blur amount: $blur_amount"
+    info "Selected blur max: $blur_max"
     info "Selected font size: $font_size"
     info "Selected round corners: $round_corners"
     info "Selected clock format: $clock_format"

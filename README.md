@@ -46,11 +46,13 @@ Nix users can set them directly, and every option has a default.
 
 | Option | Default | Values |
 | --- | --- | --- |
-| `backgroundDim` | `none` | `none`, `light`, `medium`, `dark` |
-| `formBackgroundColor` | `#21222C` | Qt color string, such as `#111827` |
-| `blurStrength` | `normal` | `soft`, `normal`, `strong` |
-| `fontSize` | `normal` | `small`, `normal`, `large` |
-| `roundCorners` | `normal` | `none`, `small`, `normal`, `large` |
+| `background.dim` | `0.0` | Number from `0.0` to `1.0` |
+| `background.color` | `#21222C` | Qt color string, such as `#111827` |
+| `form.background.color` | `#21222C` | Qt color string, such as `#111827` |
+| `form.blur.amount` | `2.0` | Number from `0.0` up to, but not including, `3.0` |
+| `form.blur.max` | `48` | Number greater than or equal to `2` |
+| `font.size` | `13` | Positive number |
+| `roundCorners` | `20` | Number greater than or equal to `0` |
 | `clockFormat` | `24h` | `24h`, `12h`, `iso`, `locale` |
 
 ## Backgrounds
@@ -184,15 +186,17 @@ Or import the included NixOS module and select theme options:
 
   services.sddmTheme.enable = true;
   services.sddmTheme.composition = "left";
-  services.sddmTheme.formStyle = "solid";
-  services.sddmTheme.background = "nixos-catppuccin-mocha";
-  services.sddmTheme.backgroundPlacement = "fill";
-  services.sddmTheme.font = "Orbitron";
-  services.sddmTheme.backgroundDim = "light";
-  services.sddmTheme.formBackgroundColor = "#111827";
-  services.sddmTheme.blurStrength = "normal";
-  services.sddmTheme.fontSize = "normal";
-  services.sddmTheme.roundCorners = "normal";
+  services.sddmTheme.form.style = "solid";
+  services.sddmTheme.form.background.color = "#111827";
+  services.sddmTheme.background.name = "nixos-catppuccin-mocha";
+  services.sddmTheme.background.placement = "fill";
+  services.sddmTheme.background.dim = 0.2;
+  services.sddmTheme.background.color = "#111827";
+  services.sddmTheme.form.blur.amount = 2.0;
+  services.sddmTheme.form.blur.max = 48;
+  services.sddmTheme.font.family = "Orbitron";
+  services.sddmTheme.font.size = 13;
+  services.sddmTheme.roundCorners = 20;
   services.sddmTheme.clockFormat = "24h";
 }
 ```
@@ -202,9 +206,6 @@ The module installs the theme package, sets
 `Themes/selected.conf` from the selected options, and patches
 `metadata.desktop` to point at it. It also adds the Qt runtime packages needed
 by the greeter to `services.displayManager.sddm.extraPackages`.
-
-`services.sddmTheme.variant` is still accepted as a deprecated alias for
-`services.sddmTheme.background`.
 
 ## Manual Installation
 
@@ -250,7 +251,10 @@ sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/sddm-theme/
 ```
 
 The installer menu can also install the theme and select options interactively.
-Advanced options are optional and can be skipped:
+Advanced options are optional and can be skipped. When configured, the
+installer asks for the same value-based settings as the Nix module, such as
+`background.dim`, `background.color`, `form.background.color`,
+`form.blur.amount`, `form.blur.max`, `font.size`, and `roundCorners`.
 
 ```sh
 ./setup.sh

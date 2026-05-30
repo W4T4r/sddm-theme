@@ -18,11 +18,13 @@
       defaultBackground = "nixos-gear";
       defaultBackgroundPlacement = "fill";
       defaultFont = "Open Sans";
-      defaultBackgroundDim = "none";
+      defaultBackgroundDim = 0.0;
+      defaultBackgroundColor = "#21222C";
       defaultFormBackgroundColor = "#21222C";
-      defaultBlurStrength = "normal";
-      defaultFontSize = "normal";
-      defaultRoundCorners = "normal";
+      defaultBlurAmount = 2.0;
+      defaultBlurMax = 48;
+      defaultFontSize = 13;
+      defaultRoundCorners = 20;
       defaultClockFormat = "24h";
       fontFamilies = [
         "Open Sans"
@@ -103,28 +105,6 @@
         "bottom-left"
         "bottom-right"
       ];
-      backgroundDims = [
-        "none"
-        "light"
-        "medium"
-        "dark"
-      ];
-      blurStrengths = [
-        "soft"
-        "normal"
-        "strong"
-      ];
-      fontSizes = [
-        "small"
-        "normal"
-        "large"
-      ];
-      roundCornerSizes = [
-        "none"
-        "small"
-        "normal"
-        "large"
-      ];
       clockFormats = [
         "24h"
         "12h"
@@ -132,8 +112,7 @@
         "locale"
       ];
       backgrounds = builtins.attrNames backgroundFileById;
-      variants = backgrounds;
-      defaultVariant = defaultBackground;
+      backgroundIds = backgrounds;
       compositionSettings = {
         center = {
           FormPosition = "center";
@@ -212,59 +191,6 @@
           BackgroundVerticalAlignment = "bottom";
         };
       };
-      backgroundDimSettings = {
-        none = {
-          DimBackground = "0.0";
-        };
-        light = {
-          DimBackground = "0.2";
-        };
-        medium = {
-          DimBackground = "0.4";
-        };
-        dark = {
-          DimBackground = "0.6";
-        };
-      };
-      blurStrengthSettings = {
-        soft = {
-          Blur = "1.0";
-          BlurMax = "32";
-        };
-        normal = {
-          Blur = "2.0";
-          BlurMax = "48";
-        };
-        strong = {
-          Blur = "2.8";
-          BlurMax = "64";
-        };
-      };
-      fontSizeSettings = {
-        small = {
-          FontSize = "11";
-        };
-        normal = {
-          FontSize = "13";
-        };
-        large = {
-          FontSize = "16";
-        };
-      };
-      roundCornerSettings = {
-        none = {
-          RoundCorners = "0";
-        };
-        small = {
-          RoundCorners = "12";
-        };
-        normal = {
-          RoundCorners = "20";
-        };
-        large = {
-          RoundCorners = "28";
-        };
-      };
       clockFormatSettings = {
         "24h" = {
           HourFormat = "HH:mm";
@@ -303,28 +229,27 @@
       mkTheme =
         pkgs:
         {
-          background ? null,
+          background ? { },
           composition ? defaultComposition,
-          formStyle ? defaultFormStyle,
-          backgroundPlacement ? defaultBackgroundPlacement,
-          font ? defaultFont,
-          backgroundDim ? defaultBackgroundDim,
-          formBackgroundColor ? defaultFormBackgroundColor,
-          blurStrength ? defaultBlurStrength,
-          fontSize ? defaultFontSize,
+          form ? { },
+          font ? { },
           roundCorners ? defaultRoundCorners,
           clockFormat ? defaultClockFormat,
-          variant ? null,
         }:
         let
-          selectedBackground =
-            if background != null then
-              background
-            else if variant != null then
-              variant
-            else
-              defaultBackground;
+          formBackground = form.background or { };
+          formBlur = form.blur or { };
+          selectedBackground = background.name or defaultBackground;
           selectedComposition = composition;
+          selectedFormStyle = form.style or defaultFormStyle;
+          selectedBackgroundPlacement = background.placement or defaultBackgroundPlacement;
+          selectedBackgroundDim = background.dim or defaultBackgroundDim;
+          selectedBackgroundColor = background.color or defaultBackgroundColor;
+          selectedFormBackgroundColor = formBackground.color or defaultFormBackgroundColor;
+          selectedBlurAmount = formBlur.amount or defaultBlurAmount;
+          selectedBlurMax = formBlur.max or defaultBlurMax;
+          selectedFontFamily = font.family or defaultFont;
+          selectedFontSize = font.size or defaultFontSize;
           selectedBackgroundFile = backgroundFileById.${selectedBackground};
           selectedBackgroundPath = "Backgrounds/${selectedBackgroundFile}";
           selectedBackgroundExtension = fileExtension selectedBackgroundFile;
@@ -340,30 +265,34 @@
             compositionSettings.${selectedComposition}
             // {
               Background = selectedBackgroundPath;
-              Font = font;
-              FormBackgroundColor = formBackgroundColor;
+              BackgroundColor = selectedBackgroundColor;
+              Blur = selectedBlurAmount;
+              BlurMax = selectedBlurMax;
+              DimBackgroundColor = selectedBackgroundColor;
+              DimBackground = selectedBackgroundDim;
+              Font = selectedFontFamily;
+              FontSize = selectedFontSize;
+              FormBackgroundColor = selectedFormBackgroundColor;
+              RoundCorners = roundCorners;
             }
-            // formStyleSettings.${formStyle}
-            // backgroundPlacementSettings.${backgroundPlacement}
-            // backgroundDimSettings.${backgroundDim}
-            // blurStrengthSettings.${blurStrength}
-            // fontSizeSettings.${fontSize}
-            // roundCornerSettings.${roundCorners}
+            // formStyleSettings.${selectedFormStyle}
+            // backgroundPlacementSettings.${selectedBackgroundPlacement}
             // clockFormatSettings.${clockFormat};
           setSelectedConfig = pkgs.lib.concatStringsSep "\n" (
             pkgs.lib.mapAttrsToList (key: value: ''
-              sed -i 's|^${key}=.*|${key}="${value}"|' "$themeDir/Themes/selected.conf"
+              sed -i 's|^${key}=.*|${key}="${toString value}"|' "$themeDir/Themes/selected.conf"
             '') selectedSettings
           );
         in
         assert builtins.elem selectedBackground backgrounds;
-        assert builtins.elem formStyle formStyles;
-        assert builtins.elem backgroundPlacement backgroundPlacements;
-        assert builtins.elem font fontFamilies;
-        assert builtins.elem backgroundDim backgroundDims;
-        assert builtins.elem blurStrength blurStrengths;
-        assert builtins.elem fontSize fontSizes;
-        assert builtins.elem roundCorners roundCornerSizes;
+        assert builtins.elem selectedFormStyle formStyles;
+        assert builtins.elem selectedBackgroundPlacement backgroundPlacements;
+        assert builtins.elem selectedFontFamily fontFamilies;
+        assert selectedBackgroundDim >= 0.0 && selectedBackgroundDim <= 1.0;
+        assert selectedBlurAmount >= 0.0 && selectedBlurAmount < 3.0;
+        assert selectedBlurMax >= 2;
+        assert selectedFontSize > 0;
+        assert roundCorners >= 0;
         assert builtins.elem clockFormat clockFormats;
         assert builtins.hasAttr defaultBackground backgroundFileById;
         assert builtins.hasAttr selectedComposition compositionSettings;
@@ -413,20 +342,14 @@
         }:
         let
           cfg = config.services.sddmTheme;
-          selectedBackground = if cfg.variant != null then cfg.variant else cfg.background;
           package =
             if cfg.package == null then
               self.lib.mkSddmTheme pkgs {
-                background = selectedBackground;
                 inherit (cfg)
+                  background
                   composition
-                  formStyle
-                  backgroundPlacement
+                  form
                   font
-                  backgroundDim
-                  formBackgroundColor
-                  blurStrength
-                  fontSize
                   roundCorners
                   clockFormat
                   ;
@@ -444,70 +367,116 @@
               description = "Theme layout composition.";
             };
 
-            formStyle = lib.mkOption {
-              type = lib.types.enum formStyles;
-              default = defaultFormStyle;
-              description = "Form background style.";
-            };
-
             background = lib.mkOption {
-              type = lib.types.enum backgrounds;
-              default = defaultBackground;
-              description = "Theme background artwork.";
+              type = lib.types.submodule {
+                options = {
+                  name = lib.mkOption {
+                    type = lib.types.enum backgrounds;
+                    default = defaultBackground;
+                    description = "Theme background artwork.";
+                  };
+
+                  placement = lib.mkOption {
+                    type = lib.types.enum backgroundPlacements;
+                    default = defaultBackgroundPlacement;
+                    description = "Background scaling and alignment.";
+                  };
+
+                  dim = lib.mkOption {
+                    type = lib.types.number;
+                    default = defaultBackgroundDim;
+                    description = "Background dim opacity from 0.0 to 1.0.";
+                  };
+
+                  color = lib.mkOption {
+                    type = lib.types.str;
+                    default = defaultBackgroundColor;
+                    description = "Fallback window background color.";
+                  };
+                };
+              };
+              default = { };
+              description = "Background settings.";
             };
 
-            backgroundPlacement = lib.mkOption {
-              type = lib.types.enum backgroundPlacements;
-              default = defaultBackgroundPlacement;
-              description = "Background scaling and alignment.";
+            form = lib.mkOption {
+              type = lib.types.submodule {
+                options = {
+                  style = lib.mkOption {
+                    type = lib.types.enum formStyles;
+                    default = defaultFormStyle;
+                    description = "Form background style.";
+                  };
+
+                  background = lib.mkOption {
+                    type = lib.types.submodule {
+                      options = {
+                        color = lib.mkOption {
+                          type = lib.types.str;
+                          default = defaultFormBackgroundColor;
+                          description = "Solid form background color.";
+                        };
+                      };
+                    };
+                    default = { };
+                    description = "Form background settings.";
+                  };
+
+                  blur = lib.mkOption {
+                    type = lib.types.submodule {
+                      options = {
+                        amount = lib.mkOption {
+                          type = lib.types.number;
+                          default = defaultBlurAmount;
+                          description = "Blur amount from 0.0 up to, but not including, 3.0.";
+                        };
+
+                        max = lib.mkOption {
+                          type = lib.types.number;
+                          default = defaultBlurMax;
+                          description = "Maximum blur radius.";
+                        };
+                      };
+                    };
+                    default = { };
+                    description = "Form blur settings.";
+                  };
+                };
+              };
+              default = { };
+              description = "Form settings.";
             };
 
             font = lib.mkOption {
-              type = lib.types.enum fontFamilies;
-              default = defaultFont;
-              description = "Theme font family.";
-            };
+              type = lib.types.submodule {
+                options = {
+                  family = lib.mkOption {
+                    type = lib.types.enum fontFamilies;
+                    default = defaultFont;
+                    description = "Theme font family.";
+                  };
 
-            backgroundDim = lib.mkOption {
-              type = lib.types.enum backgroundDims;
-              default = defaultBackgroundDim;
-              description = "Background dim preset.";
-            };
-
-            formBackgroundColor = lib.mkOption {
-              type = lib.types.str;
-              default = defaultFormBackgroundColor;
-              description = "Solid form background color.";
-            };
-
-            blurStrength = lib.mkOption {
-              type = lib.types.enum blurStrengths;
-              default = defaultBlurStrength;
-              description = "Blur strength preset for blur form style.";
-            };
-
-            fontSize = lib.mkOption {
-              type = lib.types.enum fontSizes;
-              default = defaultFontSize;
-              description = "Theme font size preset.";
+                  size = lib.mkOption {
+                    type = lib.types.number;
+                    default = defaultFontSize;
+                    description = "Theme font point size.";
+                  };
+                };
+              };
+              default = { };
+              description = "Theme font settings.";
             };
 
             roundCorners = lib.mkOption {
-              type = lib.types.enum roundCornerSizes;
+              type = lib.types.number;
               default = defaultRoundCorners;
-              description = "Rounded corner size preset.";
+              description = "Rounded corner radius.";
             };
 
             clockFormat = lib.mkOption {
               type = lib.types.enum clockFormats;
               default = defaultClockFormat;
               description = "Clock and date format preset.";
-            };
-
-            variant = lib.mkOption {
-              type = lib.types.nullOr (lib.types.enum backgrounds);
-              default = null;
-              description = "Deprecated alias for background.";
             };
 
             package = lib.mkOption {
@@ -532,16 +501,16 @@
       lib = {
         inherit
           backgrounds
-          backgroundDims
           backgroundPlacements
-          blurStrengths
           clockFormats
           compositions
           defaultBackground
+          defaultBackgroundColor
           defaultBackgroundDim
           defaultBackgroundPlacement
           defaultFormBackgroundColor
-          defaultBlurStrength
+          defaultBlurAmount
+          defaultBlurMax
           defaultClockFormat
           defaultComposition
           defaultFormStyle
@@ -549,12 +518,9 @@
           defaultFontSize
           defaultRoundCorners
           fontFamilies
-          fontSizes
           formStyles
-          roundCornerSizes
           sddmRuntimeDependencies
-          variants
-          defaultVariant
+          backgroundIds
           ;
         mkSddmTheme = mkTheme;
       };
@@ -564,18 +530,18 @@
         let
           pkgs = nixpkgsFor.${system};
           theme = mkTheme pkgs { };
-          variantPackages = builtins.listToAttrs (
-            map (variant: {
-              name = "sddm-theme-${variant}";
-              value = mkTheme pkgs { background = variant; };
-            }) variants
+          backgroundPackages = builtins.listToAttrs (
+            map (backgroundId: {
+              name = "sddm-theme-${backgroundId}";
+              value = mkTheme pkgs { background.name = backgroundId; };
+            }) backgroundIds
           );
         in
         {
           sddm-theme = theme;
           default = theme;
         }
-        // variantPackages
+        // backgroundPackages
       );
 
       nixosModules = {
