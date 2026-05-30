@@ -18,6 +18,11 @@
       defaultBackground = "nixos-gear";
       defaultBackgroundPlacement = "fill";
       defaultFont = "Open Sans";
+      defaultBackgroundDim = "none";
+      defaultBlurStrength = "normal";
+      defaultFontSize = "normal";
+      defaultRoundCorners = "normal";
+      defaultClockFormat = "24h";
       fontFamilies = [
         "Open Sans"
         "ArcadeClassic"
@@ -96,6 +101,34 @@
         "top-right"
         "bottom-left"
         "bottom-right"
+      ];
+      backgroundDims = [
+        "none"
+        "light"
+        "medium"
+        "dark"
+      ];
+      blurStrengths = [
+        "soft"
+        "normal"
+        "strong"
+      ];
+      fontSizes = [
+        "small"
+        "normal"
+        "large"
+      ];
+      roundCornerSizes = [
+        "none"
+        "small"
+        "normal"
+        "large"
+      ];
+      clockFormats = [
+        "24h"
+        "12h"
+        "iso"
+        "locale"
       ];
       backgrounds = builtins.attrNames backgroundFileById;
       variants = backgrounds;
@@ -178,6 +211,77 @@
           BackgroundVerticalAlignment = "bottom";
         };
       };
+      backgroundDimSettings = {
+        none = {
+          DimBackground = "0.0";
+        };
+        light = {
+          DimBackground = "0.2";
+        };
+        medium = {
+          DimBackground = "0.4";
+        };
+        dark = {
+          DimBackground = "0.6";
+        };
+      };
+      blurStrengthSettings = {
+        soft = {
+          Blur = "1.0";
+          BlurMax = "32";
+        };
+        normal = {
+          Blur = "2.0";
+          BlurMax = "48";
+        };
+        strong = {
+          Blur = "2.8";
+          BlurMax = "64";
+        };
+      };
+      fontSizeSettings = {
+        small = {
+          FontSize = "11";
+        };
+        normal = {
+          FontSize = "13";
+        };
+        large = {
+          FontSize = "16";
+        };
+      };
+      roundCornerSettings = {
+        none = {
+          RoundCorners = "0";
+        };
+        small = {
+          RoundCorners = "12";
+        };
+        normal = {
+          RoundCorners = "20";
+        };
+        large = {
+          RoundCorners = "28";
+        };
+      };
+      clockFormatSettings = {
+        "24h" = {
+          HourFormat = "HH:mm";
+          DateFormat = "dddd d MMMM";
+        };
+        "12h" = {
+          HourFormat = "h:mm AP";
+          DateFormat = "dddd d MMMM";
+        };
+        iso = {
+          HourFormat = "HH:mm";
+          DateFormat = "yyyy-MM-dd";
+        };
+        locale = {
+          HourFormat = "";
+          DateFormat = "";
+        };
+      };
       supportedSystems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -189,6 +293,12 @@
           inherit system;
         }
       );
+      sddmRuntimeDependencies =
+        pkgs: with pkgs.kdePackages; [
+          qtsvg
+          qtmultimedia
+          qtvirtualkeyboard
+        ];
       mkTheme =
         pkgs:
         {
@@ -197,6 +307,11 @@
           formStyle ? defaultFormStyle,
           backgroundPlacement ? defaultBackgroundPlacement,
           font ? defaultFont,
+          backgroundDim ? defaultBackgroundDim,
+          blurStrength ? defaultBlurStrength,
+          fontSize ? defaultFontSize,
+          roundCorners ? defaultRoundCorners,
+          clockFormat ? defaultClockFormat,
           variant ? null,
         }:
         let
@@ -226,7 +341,12 @@
               Font = font;
             }
             // formStyleSettings.${formStyle}
-            // backgroundPlacementSettings.${backgroundPlacement};
+            // backgroundPlacementSettings.${backgroundPlacement}
+            // backgroundDimSettings.${backgroundDim}
+            // blurStrengthSettings.${blurStrength}
+            // fontSizeSettings.${fontSize}
+            // roundCornerSettings.${roundCorners}
+            // clockFormatSettings.${clockFormat};
           setSelectedConfig = pkgs.lib.concatStringsSep "\n" (
             pkgs.lib.mapAttrsToList (key: value: ''
               sed -i 's|^${key}=.*|${key}="${value}"|' "$themeDir/Themes/selected.conf"
@@ -237,6 +357,11 @@
         assert builtins.elem formStyle formStyles;
         assert builtins.elem backgroundPlacement backgroundPlacements;
         assert builtins.elem font fontFamilies;
+        assert builtins.elem backgroundDim backgroundDims;
+        assert builtins.elem blurStrength blurStrengths;
+        assert builtins.elem fontSize fontSizes;
+        assert builtins.elem roundCorners roundCornerSizes;
+        assert builtins.elem clockFormat clockFormats;
         assert builtins.hasAttr defaultBackground backgroundFileById;
         assert builtins.hasAttr selectedComposition compositionSettings;
         pkgs.stdenvNoCC.mkDerivation {
@@ -247,6 +372,9 @@
 
           dontConfigure = true;
           dontBuild = true;
+
+          propagatedUserEnvPkgs = sddmRuntimeDependencies pkgs;
+          passthru.runtimeDependencies = sddmRuntimeDependencies pkgs;
 
           installPhase = ''
             runHook preInstall
@@ -292,6 +420,11 @@
                   formStyle
                   backgroundPlacement
                   font
+                  backgroundDim
+                  blurStrength
+                  fontSize
+                  roundCorners
+                  clockFormat
                   ;
               }
             else
@@ -331,6 +464,36 @@
               description = "Theme font family.";
             };
 
+            backgroundDim = lib.mkOption {
+              type = lib.types.enum backgroundDims;
+              default = defaultBackgroundDim;
+              description = "Background dim preset.";
+            };
+
+            blurStrength = lib.mkOption {
+              type = lib.types.enum blurStrengths;
+              default = defaultBlurStrength;
+              description = "Blur strength preset for blur form style.";
+            };
+
+            fontSize = lib.mkOption {
+              type = lib.types.enum fontSizes;
+              default = defaultFontSize;
+              description = "Theme font size preset.";
+            };
+
+            roundCorners = lib.mkOption {
+              type = lib.types.enum roundCornerSizes;
+              default = defaultRoundCorners;
+              description = "Rounded corner size preset.";
+            };
+
+            clockFormat = lib.mkOption {
+              type = lib.types.enum clockFormats;
+              default = defaultClockFormat;
+              description = "Clock and date format preset.";
+            };
+
             variant = lib.mkOption {
               type = lib.types.nullOr (lib.types.enum backgrounds);
               default = null;
@@ -348,7 +511,10 @@
             environment.systemPackages = [ package ];
             fonts.packages = [ package ];
 
-            services.displayManager.sddm.theme = themeName;
+            services.displayManager.sddm = {
+              theme = themeName;
+              extraPackages = lib.mkAfter (sddmRuntimeDependencies pkgs);
+            };
           };
         };
     in
@@ -356,15 +522,26 @@
       lib = {
         inherit
           backgrounds
+          backgroundDims
           backgroundPlacements
+          blurStrengths
+          clockFormats
           compositions
           defaultBackground
+          defaultBackgroundDim
           defaultBackgroundPlacement
+          defaultBlurStrength
+          defaultClockFormat
           defaultComposition
           defaultFormStyle
           defaultFont
+          defaultFontSize
+          defaultRoundCorners
           fontFamilies
+          fontSizes
           formStyles
+          roundCornerSizes
+          sddmRuntimeDependencies
           variants
           defaultVariant
           ;

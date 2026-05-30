@@ -20,6 +20,11 @@ readonly DEFAULT_FORM_STYLE="solid"
 readonly DEFAULT_BACKGROUND="nixos-gear"
 readonly DEFAULT_BACKGROUND_PLACEMENT="fill"
 readonly DEFAULT_FONT="Open Sans"
+readonly DEFAULT_BACKGROUND_DIM="none"
+readonly DEFAULT_BLUR_STRENGTH="normal"
+readonly DEFAULT_FONT_SIZE="normal"
+readonly DEFAULT_ROUND_CORNERS="normal"
+readonly DEFAULT_CLOCK_FORMAT="24h"
 
 readonly -a COMPOSITIONS=(
     "center" "left" "right"
@@ -38,6 +43,26 @@ readonly -a FONTS=(
     "Open Sans" "ArcadeClassic" "ESPACION" "Electroharmonix"
     "Fragile Bombers" "Fragile Bombers Attack" "Fragile Bombers Down"
     "KogniGear" "Orbitron" "Pixelon" "Thunderman"
+)
+
+readonly -a BACKGROUND_DIMS=(
+    "none" "light" "medium" "dark"
+)
+
+readonly -a BLUR_STRENGTHS=(
+    "soft" "normal" "strong"
+)
+
+readonly -a FONT_SIZES=(
+    "small" "normal" "large"
+)
+
+readonly -a ROUND_CORNERS=(
+    "none" "small" "normal" "large"
+)
+
+readonly -a CLOCK_FORMATS=(
+    "24h" "12h" "iso" "locale"
 )
 
 readonly -a SUPPORTED_BACKGROUND_EXTENSIONS=(
@@ -358,6 +383,74 @@ apply_background_placement() {
     esac
 }
 
+apply_advanced_settings() {
+    local file="$1"
+    local background_dim="$2"
+    local blur_strength="$3"
+    local font_size="$4"
+    local round_corners="$5"
+    local clock_format="$6"
+
+    case "$background_dim" in
+        none) set_conf_value "$file" "DimBackground" "0.0" ;;
+        light) set_conf_value "$file" "DimBackground" "0.2" ;;
+        medium) set_conf_value "$file" "DimBackground" "0.4" ;;
+        dark) set_conf_value "$file" "DimBackground" "0.6" ;;
+        *) error "Unknown background dim: $background_dim"; return 1 ;;
+    esac
+
+    case "$blur_strength" in
+        soft)
+            set_conf_value "$file" "Blur" "1.0"
+            set_conf_value "$file" "BlurMax" "32"
+            ;;
+        normal)
+            set_conf_value "$file" "Blur" "2.0"
+            set_conf_value "$file" "BlurMax" "48"
+            ;;
+        strong)
+            set_conf_value "$file" "Blur" "2.8"
+            set_conf_value "$file" "BlurMax" "64"
+            ;;
+        *) error "Unknown blur strength: $blur_strength"; return 1 ;;
+    esac
+
+    case "$font_size" in
+        small) set_conf_value "$file" "FontSize" "11" ;;
+        normal) set_conf_value "$file" "FontSize" "13" ;;
+        large) set_conf_value "$file" "FontSize" "16" ;;
+        *) error "Unknown font size: $font_size"; return 1 ;;
+    esac
+
+    case "$round_corners" in
+        none) set_conf_value "$file" "RoundCorners" "0" ;;
+        small) set_conf_value "$file" "RoundCorners" "12" ;;
+        normal) set_conf_value "$file" "RoundCorners" "20" ;;
+        large) set_conf_value "$file" "RoundCorners" "28" ;;
+        *) error "Unknown round corners: $round_corners"; return 1 ;;
+    esac
+
+    case "$clock_format" in
+        24h)
+            set_conf_value "$file" "HourFormat" "HH:mm"
+            set_conf_value "$file" "DateFormat" "dddd d MMMM"
+            ;;
+        12h)
+            set_conf_value "$file" "HourFormat" "h:mm AP"
+            set_conf_value "$file" "DateFormat" "dddd d MMMM"
+            ;;
+        iso)
+            set_conf_value "$file" "HourFormat" "HH:mm"
+            set_conf_value "$file" "DateFormat" "yyyy-MM-dd"
+            ;;
+        locale)
+            set_conf_value "$file" "HourFormat" ""
+            set_conf_value "$file" "DateFormat" ""
+            ;;
+        *) error "Unknown clock format: $clock_format"; return 1 ;;
+    esac
+}
+
 write_selected_theme() {
     local theme_root="$1"
     local composition="$2"
@@ -365,6 +458,11 @@ write_selected_theme() {
     local form_style="$4"
     local background_placement="$5"
     local font="$6"
+    local background_dim="$7"
+    local blur_strength="$8"
+    local font_size="$9"
+    local round_corners="${10}"
+    local clock_format="${11}"
     local template="$theme_root/Themes/${DEFAULT_BACKGROUND}.conf"
     local output="$theme_root/Themes/selected.conf"
     local background_file
@@ -385,6 +483,7 @@ write_selected_theme() {
     apply_composition "$tmp" "$composition"
     apply_form_style "$tmp" "$form_style"
     apply_background_placement "$tmp" "$background_placement"
+    apply_advanced_settings "$tmp" "$background_dim" "$blur_strength" "$font_size" "$round_corners" "$clock_format"
 
     sudo install -m 0644 "$tmp" "$output"
     rm -f "$tmp"
@@ -404,6 +503,11 @@ select_theme() {
     local form_style
     local background_placement
     local font
+    local background_dim="$DEFAULT_BACKGROUND_DIM"
+    local blur_strength="$DEFAULT_BLUR_STRENGTH"
+    local font_size="$DEFAULT_FONT_SIZE"
+    local round_corners="$DEFAULT_ROUND_CORNERS"
+    local clock_format="$DEFAULT_CLOCK_FORMAT"
     local -a backgrounds
 
     composition=$(choose "${COMPOSITIONS[@]}" || echo "$DEFAULT_COMPOSITION")
@@ -414,12 +518,25 @@ select_theme() {
     background_placement=$(choose "${BACKGROUND_PLACEMENTS[@]}" || echo "$DEFAULT_BACKGROUND_PLACEMENT")
     font=$(choose "${FONTS[@]}" || echo "$DEFAULT_FONT")
 
-    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background" "$form_style" "$background_placement" "$font"
+    if confirm "Configure advanced options?"; then
+        background_dim=$(choose "${BACKGROUND_DIMS[@]}" || echo "$DEFAULT_BACKGROUND_DIM")
+        blur_strength=$(choose "${BLUR_STRENGTHS[@]}" || echo "$DEFAULT_BLUR_STRENGTH")
+        font_size=$(choose "${FONT_SIZES[@]}" || echo "$DEFAULT_FONT_SIZE")
+        round_corners=$(choose "${ROUND_CORNERS[@]}" || echo "$DEFAULT_ROUND_CORNERS")
+        clock_format=$(choose "${CLOCK_FORMATS[@]}" || echo "$DEFAULT_CLOCK_FORMAT")
+    fi
+
+    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background" "$form_style" "$background_placement" "$font" "$background_dim" "$blur_strength" "$font_size" "$round_corners" "$clock_format"
     info "Selected composition: $composition"
     info "Selected form style: $form_style"
     info "Selected background: $background"
     info "Selected background placement: $background_placement"
     info "Selected font: $font"
+    info "Selected background dim: $background_dim"
+    info "Selected blur strength: $blur_strength"
+    info "Selected font size: $font_size"
+    info "Selected round corners: $round_corners"
+    info "Selected clock format: $clock_format"
 }
 
 _disable_dm_systemd() {

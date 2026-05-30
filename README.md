@@ -39,6 +39,19 @@ Available form styles:
 - `solid`
 - `blur`
 
+## Advanced Options
+
+The installer asks for these only if you choose to configure advanced options.
+Nix users can set them directly, and every option has a default.
+
+| Option | Default | Values |
+| --- | --- | --- |
+| `backgroundDim` | `none` | `none`, `light`, `medium`, `dark` |
+| `blurStrength` | `normal` | `soft`, `normal`, `strong` |
+| `fontSize` | `normal` | `small`, `normal`, `large` |
+| `roundCorners` | `normal` | `none`, `small`, `normal`, `large` |
+| `clockFormat` | `24h` | `24h`, `12h`, `iso`, `locale` |
+
 ## Backgrounds
 
 The default background is `nixos-gear`.
@@ -150,6 +163,16 @@ Then install and select it in NixOS:
 }
 ```
 
+When using the package directly, add the greeter runtime packages as SDDM extra
+packages:
+
+```nix
+{ inputs, pkgs, ... }: {
+  services.displayManager.sddm.extraPackages =
+    inputs.sddm-theme.lib.sddmRuntimeDependencies pkgs;
+}
+```
+
 Or import the included NixOS module and select theme options:
 
 ```nix
@@ -164,13 +187,19 @@ Or import the included NixOS module and select theme options:
   services.sddmTheme.background = "nixos-catppuccin-mocha";
   services.sddmTheme.backgroundPlacement = "fill";
   services.sddmTheme.font = "Orbitron";
+  services.sddmTheme.backgroundDim = "light";
+  services.sddmTheme.blurStrength = "normal";
+  services.sddmTheme.fontSize = "normal";
+  services.sddmTheme.roundCorners = "normal";
+  services.sddmTheme.clockFormat = "24h";
 }
 ```
 
 The module installs the theme package, sets
 `services.displayManager.sddm.theme = "sddm-theme"`, generates
 `Themes/selected.conf` from the selected options, and patches
-`metadata.desktop` to point at it.
+`metadata.desktop` to point at it. It also adds the Qt runtime packages needed
+by the greeter to `services.displayManager.sddm.extraPackages`.
 
 `services.sddmTheme.variant` is still accepted as a deprecated alias for
 `services.sddmTheme.background`.
@@ -218,7 +247,8 @@ Preview:
 sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/sddm-theme/
 ```
 
-The installer menu can also install the theme and select options interactively:
+The installer menu can also install the theme and select options interactively.
+Advanced options are optional and can be skipped:
 
 ```sh
 ./setup.sh
