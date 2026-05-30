@@ -32,7 +32,7 @@ Available compositions:
 
 ## Form Styles
 
-The default form style is `solid`.
+The default form style is `blur`.
 
 Available form styles:
 
@@ -43,30 +43,31 @@ Available form styles:
 
 The installer asks for these only if you choose to configure advanced options.
 Nix users can set them directly, and every option has a default.
+Color values accept Qt color strings in `#RRGGBB` or `#AARRGGBB` form.
 
 | Option | Default | Values |
 | --- | --- | --- |
-| `background.dim` | `0.0` | Number from `0.0` to `1.0` |
-| `background.color` | `#21222C` | Qt color string, such as `#111827` |
-| `form.background.color` | `#21222C` | Qt color string, such as `#111827` |
-| `colors.text` | `#ffffff` | Qt color string |
-| `colors.mutedText` | `#bbbbbb` | Qt color string |
-| `colors.accent` | `#b7cef1` | Qt color string |
-| `colors.input.background` | `#222222` | Qt color string |
-| `colors.button.background` | `#343746` | Qt color string |
-| `form.blur.amount` | `2.0` | Number from `0.0` up to, but not including, `3.0` |
-| `form.blur.max` | `48` | Number greater than or equal to `2` |
-| `form.widthRatio` | `0.4` | Number greater than `0.0` and up to `1.0` |
+| `background.dim` | `0.2` | Number from `0.0` to `1.0` |
+| `background.color` | `#101820` | Qt color string, such as `#111827` or `#80262626` |
+| `form.background.color` | `#80262626` | Qt color string, such as `#111827` or `#80262626` |
+| `colors.text` | `#eeeeee` | Qt color string |
+| `colors.mutedText` | `#999999` | Qt color string |
+| `colors.accent` | `#66ccff` | Qt color string |
+| `colors.input.background` | `#20242c` | Qt color string |
+| `colors.button.background` | `#303846` | Qt color string |
+| `form.blur.amount` | `2.4` | Number from `0.0` up to, but not including, `3.0` |
+| `form.blur.max` | `60` | Number greater than or equal to `2` |
+| `form.widthRatio` | `0.45` | Number greater than `0.0` and up to `1.0` |
 | `font.size` | `13` | Positive number |
-| `roundCorners` | `20` | Number greater than or equal to `0` |
-| `clock.format` | `24h` | `24h`, `12h`, `iso`, `locale` |
-| `clock.locale` | empty | Locale string, such as `ja_JP.UTF-8` |
-| `systemButtons.visible` | `true` | `true`, `false` |
-| `virtualKeyboard.visible` | `true` | `true`, `false` |
+| `roundCorners` | `18` | Number greater than or equal to `0` |
+| `clock.format` | `iso` | `24h`, `12h`, `iso`, `locale` |
+| `clock.locale` | `en_US` | Locale string, such as `en_US` |
+| `systemButtons.visible` | `false` | `true`, `false` |
+| `virtualKeyboard.visible` | `false` | `true`, `false` |
 
 ## Backgrounds
 
-The default background is `nixos-gear`.
+The default background is `nixos-nineish-dark-gray`.
 The default background placement is `fill`.
 
 Backgrounds are discovered automatically from `Backgrounds/`. The background
@@ -123,7 +124,7 @@ tools/preview-variants.sh
 
 ## Fonts
 
-The default font is `Open Sans`.
+The default font is `Orbitron`.
 
 Bundled font families:
 
@@ -193,29 +194,49 @@ Or import the included NixOS module and select theme options:
     inputs.sddm-theme.nixosModules.default
   ];
 
-  services.sddmTheme.enable = true;
-  services.sddmTheme.composition = "left";
-  services.sddmTheme.form.style = "solid";
-  services.sddmTheme.form.background.color = "#111827";
-  services.sddmTheme.background.name = "nixos-catppuccin-mocha";
-  services.sddmTheme.background.placement = "fill";
-  services.sddmTheme.background.dim = 0.2;
-  services.sddmTheme.background.color = "#111827";
-  services.sddmTheme.colors.text = "#ffffff";
-  services.sddmTheme.colors.mutedText = "#bbbbbb";
-  services.sddmTheme.colors.accent = "#b7cef1";
-  services.sddmTheme.colors.input.background = "#222222";
-  services.sddmTheme.colors.button.background = "#343746";
-  services.sddmTheme.form.blur.amount = 2.0;
-  services.sddmTheme.form.blur.max = 48;
-  services.sddmTheme.form.widthRatio = 0.4;
-  services.sddmTheme.font.family = "Orbitron";
-  services.sddmTheme.font.size = 13;
-  services.sddmTheme.roundCorners = 20;
-  services.sddmTheme.clock.format = "24h";
-  services.sddmTheme.clock.locale = "ja_JP.UTF-8";
-  services.sddmTheme.systemButtons.visible = true;
-  services.sddmTheme.virtualKeyboard.visible = true;
+  services.sddmTheme = {
+    enable = true;
+    composition = "center";
+    background = {
+      name = "nixos-nineish-dark-gray";
+      placement = "fill";
+      dim = 0.2;
+      color = "#101820";
+    };
+    colors = {
+      text = "#eeeeee";
+      mutedText = "#999999";
+      accent = "#66ccff";
+      input = {
+        background = "#20242c";
+      };
+      button = {
+        background = "#303846";
+      };
+    };
+    form = {
+      style = "blur";
+      widthRatio = 0.45;
+      background.color = "#80262626";
+      blur.amount = 2.4;
+      blur.max = 60;
+    };
+    font = {
+      family = "Orbitron";
+      size = 13;
+    };
+    roundCorners = 18;
+    clock = {
+      format = "iso";
+      locale = "en_US";
+    };
+    systemButtons = {
+      visible = false;
+    };
+    virtualKeyboard = {
+      visible = false;
+    };
+  };
 }
 ```
 

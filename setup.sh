@@ -16,27 +16,27 @@ readonly METADATA="$THEMES_DIR/$THEME_NAME/metadata.desktop"
 readonly DATE=$(date +%s)
 
 readonly DEFAULT_COMPOSITION="center"
-readonly DEFAULT_FORM_STYLE="solid"
-readonly DEFAULT_BACKGROUND="nixos-gear"
+readonly DEFAULT_FORM_STYLE="blur"
+readonly DEFAULT_BACKGROUND="nixos-nineish-dark-gray"
 readonly DEFAULT_BACKGROUND_PLACEMENT="fill"
-readonly DEFAULT_FONT="Open Sans"
-readonly DEFAULT_BACKGROUND_DIM="0.0"
-readonly DEFAULT_BACKGROUND_COLOR="#21222C"
-readonly DEFAULT_FORM_BACKGROUND_COLOR="#21222C"
-readonly DEFAULT_TEXT_COLOR="#ffffff"
-readonly DEFAULT_MUTED_TEXT_COLOR="#bbbbbb"
-readonly DEFAULT_ACCENT_COLOR="#b7cef1"
-readonly DEFAULT_INPUT_BACKGROUND_COLOR="#222222"
-readonly DEFAULT_BUTTON_BACKGROUND_COLOR="#343746"
-readonly DEFAULT_BLUR_AMOUNT="2.0"
-readonly DEFAULT_BLUR_MAX="48"
-readonly DEFAULT_FORM_WIDTH_RATIO="0.4"
+readonly DEFAULT_FONT="Orbitron"
+readonly DEFAULT_BACKGROUND_DIM="0.2"
+readonly DEFAULT_BACKGROUND_COLOR="#101820"
+readonly DEFAULT_FORM_BACKGROUND_COLOR="#80262626"
+readonly DEFAULT_TEXT_COLOR="#eeeeee"
+readonly DEFAULT_MUTED_TEXT_COLOR="#999999"
+readonly DEFAULT_ACCENT_COLOR="#66ccff"
+readonly DEFAULT_INPUT_BACKGROUND_COLOR="#20242c"
+readonly DEFAULT_BUTTON_BACKGROUND_COLOR="#303846"
+readonly DEFAULT_BLUR_AMOUNT="2.4"
+readonly DEFAULT_BLUR_MAX="60"
+readonly DEFAULT_FORM_WIDTH_RATIO="0.45"
 readonly DEFAULT_FONT_SIZE="13"
-readonly DEFAULT_ROUND_CORNERS="20"
-readonly DEFAULT_CLOCK_FORMAT="24h"
-readonly DEFAULT_CLOCK_LOCALE=""
-readonly DEFAULT_SYSTEM_BUTTONS_VISIBLE="true"
-readonly DEFAULT_VIRTUAL_KEYBOARD_VISIBLE="true"
+readonly DEFAULT_ROUND_CORNERS="18"
+readonly DEFAULT_CLOCK_FORMAT="iso"
+readonly DEFAULT_CLOCK_LOCALE="en_US"
+readonly DEFAULT_SYSTEM_BUTTONS_VISIBLE="false"
+readonly DEFAULT_VIRTUAL_KEYBOARD_VISIBLE="false"
 
 readonly -a COMPOSITIONS=(
     "center" "left" "right"
@@ -635,7 +635,6 @@ select_theme() {
         round_corners=$(input_value "roundCorners" "$DEFAULT_ROUND_CORNERS")
         system_buttons_visible=$(input_value "systemButtons.visible" "$DEFAULT_SYSTEM_BUTTONS_VISIBLE")
         virtual_keyboard_visible=$(input_value "virtualKeyboard.visible" "$DEFAULT_VIRTUAL_KEYBOARD_VISIBLE")
-        info "clock.format"
         clock_format=$(choose "${CLOCK_FORMATS[@]}" || echo "$DEFAULT_CLOCK_FORMAT")
         clock_locale=$(input_value "clock.locale" "$DEFAULT_CLOCK_LOCALE")
     fi
