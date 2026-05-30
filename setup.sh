@@ -23,11 +23,20 @@ readonly DEFAULT_FONT="Open Sans"
 readonly DEFAULT_BACKGROUND_DIM="0.0"
 readonly DEFAULT_BACKGROUND_COLOR="#21222C"
 readonly DEFAULT_FORM_BACKGROUND_COLOR="#21222C"
+readonly DEFAULT_TEXT_COLOR="#ffffff"
+readonly DEFAULT_MUTED_TEXT_COLOR="#bbbbbb"
+readonly DEFAULT_ACCENT_COLOR="#b7cef1"
+readonly DEFAULT_INPUT_BACKGROUND_COLOR="#222222"
+readonly DEFAULT_BUTTON_BACKGROUND_COLOR="#343746"
 readonly DEFAULT_BLUR_AMOUNT="2.0"
 readonly DEFAULT_BLUR_MAX="48"
+readonly DEFAULT_FORM_WIDTH_RATIO="0.4"
 readonly DEFAULT_FONT_SIZE="13"
 readonly DEFAULT_ROUND_CORNERS="20"
 readonly DEFAULT_CLOCK_FORMAT="24h"
+readonly DEFAULT_CLOCK_LOCALE=""
+readonly DEFAULT_SYSTEM_BUTTONS_VISIBLE="true"
+readonly DEFAULT_VIRTUAL_KEYBOARD_VISIBLE="true"
 
 readonly -a COMPOSITIONS=(
     "center" "left" "right"
@@ -205,7 +214,11 @@ set_conf_value() {
     local key="$2"
     local value="$3"
 
-    sed -i "s|^${key}=.*|${key}=\"${value}\"|" "$file"
+    if grep -q "^${key}=" "$file"; then
+        sed -i "s|^${key}=.*|${key}=\"${value}\"|" "$file"
+    else
+        printf '%s="%s"\n' "$key" "$value" >> "$file"
+    fi
 }
 
 number_in_range() {
@@ -231,6 +244,22 @@ number_at_least() {
         value >= min { exit 0 }
         { exit 1 }
     '
+}
+
+bool_value() {
+    local value="$1"
+
+    [[ "$value" == "true" || "$value" == "false" ]]
+}
+
+hide_value_from_visible() {
+    local value="$1"
+
+    if [[ "$value" == "true" ]]; then
+        echo "false"
+    else
+        echo "true"
+    fi
 }
 
 is_supported_background_file() {
@@ -414,26 +443,69 @@ apply_advanced_settings() {
     local background_dim="$2"
     local background_color="$3"
     local form_background_color="$4"
-    local blur_amount="$5"
-    local blur_max="$6"
-    local font_size="$7"
-    local round_corners="$8"
-    local clock_format="$9"
+    local text_color="$5"
+    local muted_text_color="$6"
+    local accent_color="$7"
+    local input_background_color="$8"
+    local button_background_color="$9"
+    local blur_amount="${10}"
+    local blur_max="${11}"
+    local form_width_ratio="${12}"
+    local font_size="${13}"
+    local round_corners="${14}"
+    local clock_format="${15}"
+    local clock_locale="${16}"
+    local system_buttons_visible="${17}"
+    local virtual_keyboard_visible="${18}"
 
     number_in_range "$background_dim" "0.0" "1.0" "true" || { error "background.dim must be between 0.0 and 1.0"; return 1; }
     number_in_range "$blur_amount" "0.0" "3.0" "false" || { error "form.blur.amount must be at least 0.0 and less than 3.0"; return 1; }
     number_at_least "$blur_max" "2" || { error "form.blur.max must be at least 2"; return 1; }
+    number_in_range "$form_width_ratio" "0.0" "1.0" "true" && number_at_least "$form_width_ratio" "0.000001" || { error "form.widthRatio must be greater than 0.0 and at most 1.0"; return 1; }
     number_at_least "$font_size" "0.000001" || { error "font.size must be positive"; return 1; }
     number_at_least "$round_corners" "0" || { error "roundCorners must be at least 0"; return 1; }
+    bool_value "$system_buttons_visible" || { error "systemButtons.visible must be true or false"; return 1; }
+    bool_value "$virtual_keyboard_visible" || { error "virtualKeyboard.visible must be true or false"; return 1; }
 
     set_conf_value "$file" "DimBackground" "$background_dim"
     set_conf_value "$file" "BackgroundColor" "$background_color"
     set_conf_value "$file" "DimBackgroundColor" "$background_color"
     set_conf_value "$file" "FormBackgroundColor" "$form_background_color"
+    set_conf_value "$file" "HeaderTextColor" "$text_color"
+    set_conf_value "$file" "DateTextColor" "$text_color"
+    set_conf_value "$file" "TimeTextColor" "$text_color"
+    set_conf_value "$file" "LoginFieldTextColor" "$text_color"
+    set_conf_value "$file" "PasswordFieldTextColor" "$text_color"
+    set_conf_value "$file" "LoginButtonTextColor" "$text_color"
+    set_conf_value "$file" "SystemButtonsIconsColor" "$text_color"
+    set_conf_value "$file" "SessionButtonTextColor" "$text_color"
+    set_conf_value "$file" "VirtualKeyboardButtonTextColor" "$text_color"
+    set_conf_value "$file" "DropdownTextColor" "$text_color"
+    set_conf_value "$file" "UserIconColor" "$text_color"
+    set_conf_value "$file" "PasswordIconColor" "$text_color"
+    set_conf_value "$file" "PlaceholderTextColor" "$muted_text_color"
+    set_conf_value "$file" "HighlightTextColor" "$muted_text_color"
+    set_conf_value "$file" "HoverUserIconColor" "$accent_color"
+    set_conf_value "$file" "HoverPasswordIconColor" "$accent_color"
+    set_conf_value "$file" "HoverSystemButtonsIconsColor" "$accent_color"
+    set_conf_value "$file" "HoverSessionButtonTextColor" "$accent_color"
+    set_conf_value "$file" "HoverVirtualKeyboardButtonTextColor" "$accent_color"
+    set_conf_value "$file" "LoginFieldBackgroundColor" "$input_background_color"
+    set_conf_value "$file" "PasswordFieldBackgroundColor" "$input_background_color"
+    set_conf_value "$file" "DropdownBackgroundColor" "$input_background_color"
+    set_conf_value "$file" "LoginButtonBackgroundColor" "$button_background_color"
+    set_conf_value "$file" "DropdownSelectedBackgroundColor" "$button_background_color"
+    set_conf_value "$file" "HighlightBackgroundColor" "$button_background_color"
+    set_conf_value "$file" "HighlightBorderColor" "$button_background_color"
+    set_conf_value "$file" "WarningColor" "$button_background_color"
     set_conf_value "$file" "Blur" "$blur_amount"
     set_conf_value "$file" "BlurMax" "$blur_max"
+    set_conf_value "$file" "FormWidthRatio" "$form_width_ratio"
     set_conf_value "$file" "FontSize" "$font_size"
     set_conf_value "$file" "RoundCorners" "$round_corners"
+    set_conf_value "$file" "Locale" "$clock_locale"
+    set_conf_value "$file" "HideSystemButtons" "$(hide_value_from_visible "$system_buttons_visible")"
+    set_conf_value "$file" "HideVirtualKeyboard" "$(hide_value_from_visible "$virtual_keyboard_visible")"
 
     case "$clock_format" in
         24h)
@@ -466,11 +538,20 @@ write_selected_theme() {
     local background_dim="$7"
     local background_color="$8"
     local form_background_color="$9"
-    local blur_amount="${10}"
-    local blur_max="${11}"
-    local font_size="${12}"
-    local round_corners="${13}"
-    local clock_format="${14}"
+    local text_color="${10}"
+    local muted_text_color="${11}"
+    local accent_color="${12}"
+    local input_background_color="${13}"
+    local button_background_color="${14}"
+    local blur_amount="${15}"
+    local blur_max="${16}"
+    local form_width_ratio="${17}"
+    local font_size="${18}"
+    local round_corners="${19}"
+    local clock_format="${20}"
+    local clock_locale="${21}"
+    local system_buttons_visible="${22}"
+    local virtual_keyboard_visible="${23}"
     local template="$theme_root/Themes/${DEFAULT_BACKGROUND}.conf"
     local output="$theme_root/Themes/selected.conf"
     local background_file
@@ -491,7 +572,7 @@ write_selected_theme() {
     apply_composition "$tmp" "$composition"
     apply_form_style "$tmp" "$form_style"
     apply_background_placement "$tmp" "$background_placement"
-    apply_advanced_settings "$tmp" "$background_dim" "$background_color" "$form_background_color" "$blur_amount" "$blur_max" "$font_size" "$round_corners" "$clock_format"
+    apply_advanced_settings "$tmp" "$background_dim" "$background_color" "$form_background_color" "$text_color" "$muted_text_color" "$accent_color" "$input_background_color" "$button_background_color" "$blur_amount" "$blur_max" "$form_width_ratio" "$font_size" "$round_corners" "$clock_format" "$clock_locale" "$system_buttons_visible" "$virtual_keyboard_visible"
 
     sudo install -m 0644 "$tmp" "$output"
     rm -f "$tmp"
@@ -514,11 +595,20 @@ select_theme() {
     local background_dim="$DEFAULT_BACKGROUND_DIM"
     local background_color="$DEFAULT_BACKGROUND_COLOR"
     local form_background_color="$DEFAULT_FORM_BACKGROUND_COLOR"
+    local text_color="$DEFAULT_TEXT_COLOR"
+    local muted_text_color="$DEFAULT_MUTED_TEXT_COLOR"
+    local accent_color="$DEFAULT_ACCENT_COLOR"
+    local input_background_color="$DEFAULT_INPUT_BACKGROUND_COLOR"
+    local button_background_color="$DEFAULT_BUTTON_BACKGROUND_COLOR"
     local blur_amount="$DEFAULT_BLUR_AMOUNT"
     local blur_max="$DEFAULT_BLUR_MAX"
+    local form_width_ratio="$DEFAULT_FORM_WIDTH_RATIO"
     local font_size="$DEFAULT_FONT_SIZE"
     local round_corners="$DEFAULT_ROUND_CORNERS"
     local clock_format="$DEFAULT_CLOCK_FORMAT"
+    local clock_locale="$DEFAULT_CLOCK_LOCALE"
+    local system_buttons_visible="$DEFAULT_SYSTEM_BUTTONS_VISIBLE"
+    local virtual_keyboard_visible="$DEFAULT_VIRTUAL_KEYBOARD_VISIBLE"
     local -a backgrounds
 
     composition=$(choose "${COMPOSITIONS[@]}" || echo "$DEFAULT_COMPOSITION")
@@ -533,14 +623,24 @@ select_theme() {
         background_dim=$(input_value "background.dim" "$DEFAULT_BACKGROUND_DIM")
         background_color=$(input_value "background.color" "$DEFAULT_BACKGROUND_COLOR")
         form_background_color=$(input_value "form.background.color" "$DEFAULT_FORM_BACKGROUND_COLOR")
+        text_color=$(input_value "colors.text" "$DEFAULT_TEXT_COLOR")
+        muted_text_color=$(input_value "colors.mutedText" "$DEFAULT_MUTED_TEXT_COLOR")
+        accent_color=$(input_value "colors.accent" "$DEFAULT_ACCENT_COLOR")
+        input_background_color=$(input_value "colors.input.background" "$DEFAULT_INPUT_BACKGROUND_COLOR")
+        button_background_color=$(input_value "colors.button.background" "$DEFAULT_BUTTON_BACKGROUND_COLOR")
         blur_amount=$(input_value "form.blur.amount" "$DEFAULT_BLUR_AMOUNT")
         blur_max=$(input_value "form.blur.max" "$DEFAULT_BLUR_MAX")
+        form_width_ratio=$(input_value "form.widthRatio" "$DEFAULT_FORM_WIDTH_RATIO")
         font_size=$(input_value "font.size" "$DEFAULT_FONT_SIZE")
         round_corners=$(input_value "roundCorners" "$DEFAULT_ROUND_CORNERS")
+        system_buttons_visible=$(input_value "systemButtons.visible" "$DEFAULT_SYSTEM_BUTTONS_VISIBLE")
+        virtual_keyboard_visible=$(input_value "virtualKeyboard.visible" "$DEFAULT_VIRTUAL_KEYBOARD_VISIBLE")
+        info "clock.format"
         clock_format=$(choose "${CLOCK_FORMATS[@]}" || echo "$DEFAULT_CLOCK_FORMAT")
+        clock_locale=$(input_value "clock.locale" "$DEFAULT_CLOCK_LOCALE")
     fi
 
-    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background" "$form_style" "$background_placement" "$font" "$background_dim" "$background_color" "$form_background_color" "$blur_amount" "$blur_max" "$font_size" "$round_corners" "$clock_format"
+    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background" "$form_style" "$background_placement" "$font" "$background_dim" "$background_color" "$form_background_color" "$text_color" "$muted_text_color" "$accent_color" "$input_background_color" "$button_background_color" "$blur_amount" "$blur_max" "$form_width_ratio" "$font_size" "$round_corners" "$clock_format" "$clock_locale" "$system_buttons_visible" "$virtual_keyboard_visible"
     info "Selected composition: $composition"
     info "Selected form style: $form_style"
     info "Selected background: $background"
@@ -549,11 +649,20 @@ select_theme() {
     info "Selected background dim: $background_dim"
     info "Selected background color: $background_color"
     info "Selected form background color: $form_background_color"
+    info "Selected text color: $text_color"
+    info "Selected muted text color: $muted_text_color"
+    info "Selected accent color: $accent_color"
+    info "Selected input background color: $input_background_color"
+    info "Selected button background color: $button_background_color"
     info "Selected blur amount: $blur_amount"
     info "Selected blur max: $blur_max"
+    info "Selected form width ratio: $form_width_ratio"
     info "Selected font size: $font_size"
     info "Selected round corners: $round_corners"
     info "Selected clock format: $clock_format"
+    info "Selected clock locale: $clock_locale"
+    info "Selected system buttons visible: $system_buttons_visible"
+    info "Selected virtual keyboard visible: $virtual_keyboard_visible"
 }
 
 _disable_dm_systemd() {

@@ -21,11 +21,20 @@
       defaultBackgroundDim = 0.0;
       defaultBackgroundColor = "#21222C";
       defaultFormBackgroundColor = "#21222C";
+      defaultTextColor = "#ffffff";
+      defaultMutedTextColor = "#bbbbbb";
+      defaultAccentColor = "#b7cef1";
+      defaultInputBackgroundColor = "#222222";
+      defaultButtonBackgroundColor = "#343746";
       defaultBlurAmount = 2.0;
       defaultBlurMax = 48;
+      defaultFormWidthRatio = 0.4;
       defaultFontSize = 13;
       defaultRoundCorners = 20;
       defaultClockFormat = "24h";
+      defaultClockLocale = "";
+      defaultSystemButtonsVisible = true;
+      defaultVirtualKeyboardVisible = true;
       fontFamilies = [
         "Open Sans"
         "ArcadeClassic"
@@ -230,26 +239,41 @@
         pkgs:
         {
           background ? { },
+          clock ? { },
+          colors ? { },
           composition ? defaultComposition,
           form ? { },
           font ? { },
           roundCorners ? defaultRoundCorners,
-          clockFormat ? defaultClockFormat,
+          systemButtons ? { },
+          virtualKeyboard ? { },
         }:
         let
           formBackground = form.background or { };
           formBlur = form.blur or { };
+          colorInput = colors.input or { };
+          colorButton = colors.button or { };
           selectedBackground = background.name or defaultBackground;
           selectedComposition = composition;
           selectedFormStyle = form.style or defaultFormStyle;
+          selectedFormWidthRatio = form.widthRatio or defaultFormWidthRatio;
           selectedBackgroundPlacement = background.placement or defaultBackgroundPlacement;
           selectedBackgroundDim = background.dim or defaultBackgroundDim;
           selectedBackgroundColor = background.color or defaultBackgroundColor;
           selectedFormBackgroundColor = formBackground.color or defaultFormBackgroundColor;
+          selectedTextColor = colors.text or defaultTextColor;
+          selectedMutedTextColor = colors.mutedText or defaultMutedTextColor;
+          selectedAccentColor = colors.accent or defaultAccentColor;
+          selectedInputBackgroundColor = colorInput.background or defaultInputBackgroundColor;
+          selectedButtonBackgroundColor = colorButton.background or defaultButtonBackgroundColor;
           selectedBlurAmount = formBlur.amount or defaultBlurAmount;
           selectedBlurMax = formBlur.max or defaultBlurMax;
           selectedFontFamily = font.family or defaultFont;
           selectedFontSize = font.size or defaultFontSize;
+          selectedClockFormat = clock.format or defaultClockFormat;
+          selectedClockLocale = clock.locale or defaultClockLocale;
+          selectedSystemButtonsVisible = systemButtons.visible or defaultSystemButtonsVisible;
+          selectedVirtualKeyboardVisible = virtualKeyboard.visible or defaultVirtualKeyboardVisible;
           selectedBackgroundFile = backgroundFileById.${selectedBackground};
           selectedBackgroundPath = "Backgrounds/${selectedBackgroundFile}";
           selectedBackgroundExtension = fileExtension selectedBackgroundFile;
@@ -268,19 +292,56 @@
               BackgroundColor = selectedBackgroundColor;
               Blur = selectedBlurAmount;
               BlurMax = selectedBlurMax;
+              DateTextColor = selectedTextColor;
               DimBackgroundColor = selectedBackgroundColor;
               DimBackground = selectedBackgroundDim;
+              DropdownBackgroundColor = selectedInputBackgroundColor;
+              DropdownSelectedBackgroundColor = selectedButtonBackgroundColor;
+              DropdownTextColor = selectedTextColor;
               Font = selectedFontFamily;
               FontSize = selectedFontSize;
+              FormWidthRatio = selectedFormWidthRatio;
               FormBackgroundColor = selectedFormBackgroundColor;
+              HeaderTextColor = selectedTextColor;
+              HideSystemButtons = !selectedSystemButtonsVisible;
+              HideVirtualKeyboard = !selectedVirtualKeyboardVisible;
+              HighlightBackgroundColor = selectedButtonBackgroundColor;
+              HighlightBorderColor = selectedButtonBackgroundColor;
+              HighlightTextColor = selectedMutedTextColor;
+              HoverPasswordIconColor = selectedAccentColor;
+              HoverSessionButtonTextColor = selectedAccentColor;
+              HoverSystemButtonsIconsColor = selectedAccentColor;
+              HoverUserIconColor = selectedAccentColor;
+              HoverVirtualKeyboardButtonTextColor = selectedAccentColor;
+              Locale = selectedClockLocale;
+              LoginButtonBackgroundColor = selectedButtonBackgroundColor;
+              LoginButtonTextColor = selectedTextColor;
+              LoginFieldBackgroundColor = selectedInputBackgroundColor;
+              LoginFieldTextColor = selectedTextColor;
+              PasswordFieldBackgroundColor = selectedInputBackgroundColor;
+              PasswordFieldTextColor = selectedTextColor;
+              PasswordIconColor = selectedTextColor;
+              PlaceholderTextColor = selectedMutedTextColor;
               RoundCorners = roundCorners;
+              SessionButtonTextColor = selectedTextColor;
+              SystemButtonsIconsColor = selectedTextColor;
+              TimeTextColor = selectedTextColor;
+              UserIconColor = selectedTextColor;
+              VirtualKeyboardButtonTextColor = selectedTextColor;
+              WarningColor = selectedButtonBackgroundColor;
             }
             // formStyleSettings.${selectedFormStyle}
             // backgroundPlacementSettings.${selectedBackgroundPlacement}
-            // clockFormatSettings.${clockFormat};
+            // clockFormatSettings.${selectedClockFormat};
+          configValueToString =
+            value: if builtins.isBool value then lib.boolToString value else toString value;
           setSelectedConfig = pkgs.lib.concatStringsSep "\n" (
             pkgs.lib.mapAttrsToList (key: value: ''
-              sed -i 's|^${key}=.*|${key}="${toString value}"|' "$themeDir/Themes/selected.conf"
+              if grep -q '^${key}=' "$themeDir/Themes/selected.conf"; then
+                sed -i 's|^${key}=.*|${key}="${configValueToString value}"|' "$themeDir/Themes/selected.conf"
+              else
+                printf '%s="%s"\n' '${key}' '${configValueToString value}' >> "$themeDir/Themes/selected.conf"
+              fi
             '') selectedSettings
           );
         in
@@ -289,11 +350,12 @@
         assert builtins.elem selectedBackgroundPlacement backgroundPlacements;
         assert builtins.elem selectedFontFamily fontFamilies;
         assert selectedBackgroundDim >= 0.0 && selectedBackgroundDim <= 1.0;
+        assert selectedFormWidthRatio > 0.0 && selectedFormWidthRatio <= 1.0;
         assert selectedBlurAmount >= 0.0 && selectedBlurAmount < 3.0;
         assert selectedBlurMax >= 2;
         assert selectedFontSize > 0;
         assert roundCorners >= 0;
-        assert builtins.elem clockFormat clockFormats;
+        assert builtins.elem selectedClockFormat clockFormats;
         assert builtins.hasAttr defaultBackground backgroundFileById;
         assert builtins.hasAttr selectedComposition compositionSettings;
         pkgs.stdenvNoCC.mkDerivation {
@@ -347,11 +409,14 @@
               self.lib.mkSddmTheme pkgs {
                 inherit (cfg)
                   background
+                  clock
+                  colors
                   composition
                   form
                   font
                   roundCorners
-                  clockFormat
+                  systemButtons
+                  virtualKeyboard
                   ;
               }
             else
@@ -365,6 +430,56 @@
               type = lib.types.enum compositions;
               default = defaultComposition;
               description = "Theme layout composition.";
+            };
+
+            colors = lib.mkOption {
+              type = lib.types.submodule {
+                options = {
+                  text = lib.mkOption {
+                    type = lib.types.str;
+                    default = defaultTextColor;
+                    description = "Primary text and icon color.";
+                  };
+
+                  mutedText = lib.mkOption {
+                    type = lib.types.str;
+                    default = defaultMutedTextColor;
+                    description = "Muted text and placeholder color.";
+                  };
+
+                  accent = lib.mkOption {
+                    type = lib.types.str;
+                    default = defaultAccentColor;
+                    description = "Hover and focus accent color.";
+                  };
+
+                  input = lib.mkOption {
+                    type = lib.types.submodule {
+                      options.background = lib.mkOption {
+                        type = lib.types.str;
+                        default = defaultInputBackgroundColor;
+                        description = "Input and dropdown background color.";
+                      };
+                    };
+                    default = { };
+                    description = "Input color settings.";
+                  };
+
+                  button = lib.mkOption {
+                    type = lib.types.submodule {
+                      options.background = lib.mkOption {
+                        type = lib.types.str;
+                        default = defaultButtonBackgroundColor;
+                        description = "Button, highlight, and warning background color.";
+                      };
+                    };
+                    default = { };
+                    description = "Button color settings.";
+                  };
+                };
+              };
+              default = { };
+              description = "Shared theme color settings.";
             };
 
             background = lib.mkOption {
@@ -406,6 +521,12 @@
                     type = lib.types.enum formStyles;
                     default = defaultFormStyle;
                     description = "Form background style.";
+                  };
+
+                  widthRatio = lib.mkOption {
+                    type = lib.types.number;
+                    default = defaultFormWidthRatio;
+                    description = "Form width as a fraction of the screen width.";
                   };
 
                   background = lib.mkOption {
@@ -473,10 +594,48 @@
               description = "Rounded corner radius.";
             };
 
-            clockFormat = lib.mkOption {
-              type = lib.types.enum clockFormats;
-              default = defaultClockFormat;
-              description = "Clock and date format preset.";
+            clock = lib.mkOption {
+              type = lib.types.submodule {
+                options = {
+                  format = lib.mkOption {
+                    type = lib.types.enum clockFormats;
+                    default = defaultClockFormat;
+                    description = "Clock and date format preset.";
+                  };
+
+                  locale = lib.mkOption {
+                    type = lib.types.str;
+                    default = defaultClockLocale;
+                    description = "Locale for clock and date formatting.";
+                  };
+                };
+              };
+              default = { };
+              description = "Clock settings.";
+            };
+
+            systemButtons = lib.mkOption {
+              type = lib.types.submodule {
+                options.visible = lib.mkOption {
+                  type = lib.types.bool;
+                  default = defaultSystemButtonsVisible;
+                  description = "Whether shutdown, reboot, suspend, and hibernate buttons are visible.";
+                };
+              };
+              default = { };
+              description = "System button settings.";
+            };
+
+            virtualKeyboard = lib.mkOption {
+              type = lib.types.submodule {
+                options.visible = lib.mkOption {
+                  type = lib.types.bool;
+                  default = defaultVirtualKeyboardVisible;
+                  description = "Whether the virtual keyboard toggle is visible.";
+                };
+              };
+              default = { };
+              description = "Virtual keyboard settings.";
             };
 
             package = lib.mkOption {
@@ -508,15 +667,24 @@
           defaultBackgroundColor
           defaultBackgroundDim
           defaultBackgroundPlacement
-          defaultFormBackgroundColor
+          defaultAccentColor
           defaultBlurAmount
           defaultBlurMax
           defaultClockFormat
+          defaultClockLocale
           defaultComposition
+          defaultButtonBackgroundColor
+          defaultFormBackgroundColor
+          defaultFormWidthRatio
           defaultFormStyle
           defaultFont
           defaultFontSize
+          defaultInputBackgroundColor
+          defaultMutedTextColor
           defaultRoundCorners
+          defaultSystemButtonsVisible
+          defaultTextColor
+          defaultVirtualKeyboardVisible
           fontFamilies
           formStyles
           sddmRuntimeDependencies

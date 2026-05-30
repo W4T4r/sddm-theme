@@ -49,11 +49,20 @@ Nix users can set them directly, and every option has a default.
 | `background.dim` | `0.0` | Number from `0.0` to `1.0` |
 | `background.color` | `#21222C` | Qt color string, such as `#111827` |
 | `form.background.color` | `#21222C` | Qt color string, such as `#111827` |
+| `colors.text` | `#ffffff` | Qt color string |
+| `colors.mutedText` | `#bbbbbb` | Qt color string |
+| `colors.accent` | `#b7cef1` | Qt color string |
+| `colors.input.background` | `#222222` | Qt color string |
+| `colors.button.background` | `#343746` | Qt color string |
 | `form.blur.amount` | `2.0` | Number from `0.0` up to, but not including, `3.0` |
 | `form.blur.max` | `48` | Number greater than or equal to `2` |
+| `form.widthRatio` | `0.4` | Number greater than `0.0` and up to `1.0` |
 | `font.size` | `13` | Positive number |
 | `roundCorners` | `20` | Number greater than or equal to `0` |
-| `clockFormat` | `24h` | `24h`, `12h`, `iso`, `locale` |
+| `clock.format` | `24h` | `24h`, `12h`, `iso`, `locale` |
+| `clock.locale` | empty | Locale string, such as `ja_JP.UTF-8` |
+| `systemButtons.visible` | `true` | `true`, `false` |
+| `virtualKeyboard.visible` | `true` | `true`, `false` |
 
 ## Backgrounds
 
@@ -192,12 +201,21 @@ Or import the included NixOS module and select theme options:
   services.sddmTheme.background.placement = "fill";
   services.sddmTheme.background.dim = 0.2;
   services.sddmTheme.background.color = "#111827";
+  services.sddmTheme.colors.text = "#ffffff";
+  services.sddmTheme.colors.mutedText = "#bbbbbb";
+  services.sddmTheme.colors.accent = "#b7cef1";
+  services.sddmTheme.colors.input.background = "#222222";
+  services.sddmTheme.colors.button.background = "#343746";
   services.sddmTheme.form.blur.amount = 2.0;
   services.sddmTheme.form.blur.max = 48;
+  services.sddmTheme.form.widthRatio = 0.4;
   services.sddmTheme.font.family = "Orbitron";
   services.sddmTheme.font.size = 13;
   services.sddmTheme.roundCorners = 20;
-  services.sddmTheme.clockFormat = "24h";
+  services.sddmTheme.clock.format = "24h";
+  services.sddmTheme.clock.locale = "ja_JP.UTF-8";
+  services.sddmTheme.systemButtons.visible = true;
+  services.sddmTheme.virtualKeyboard.visible = true;
 }
 ```
 
@@ -254,7 +272,9 @@ The installer menu can also install the theme and select options interactively.
 Advanced options are optional and can be skipped. When configured, the
 installer asks for the same value-based settings as the Nix module, such as
 `background.dim`, `background.color`, `form.background.color`,
-`form.blur.amount`, `form.blur.max`, `font.size`, and `roundCorners`.
+`colors.*`, `form.blur.amount`, `form.blur.max`, `form.widthRatio`,
+`font.size`, `roundCorners`, `clock.*`, `systemButtons.visible`, and
+`virtualKeyboard.visible`.
 
 ```sh
 ./setup.sh

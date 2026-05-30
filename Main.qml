@@ -85,7 +85,7 @@ Pane {
             id: form
 
             height: parent.height
-            width: parent.width / 2.5
+            width: parent.width * (Number(config.FormWidthRatio) > 0 ? Number(config.FormWidthRatio) : 0.4)
             anchors.left: config.FormPosition == "left" ? parent.left : undefined
             anchors.horizontalCenter: config.FormPosition == "center" ? parent.horizontalCenter : undefined
             anchors.right: config.FormPosition == "right" ? parent.right : undefined
