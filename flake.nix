@@ -14,7 +14,9 @@
       lib = nixpkgs.lib;
       themeName = "sddm-theme";
       defaultComposition = "center";
+      defaultFormStyle = "solid";
       defaultBackground = "nixos-gear";
+      defaultBackgroundPlacement = "fill";
       defaultFont = "Open Sans";
       fontFamilies = [
         "Open Sans"
@@ -79,30 +81,101 @@
         "left"
         "right"
       ];
+      formStyles = [
+        "solid"
+        "blur"
+      ];
+      backgroundPlacements = [
+        "fill"
+        "fit"
+        "top"
+        "bottom"
+        "left"
+        "right"
+        "top-left"
+        "top-right"
+        "bottom-left"
+        "bottom-right"
+      ];
       backgrounds = builtins.attrNames backgroundFileById;
       variants = backgrounds;
       defaultVariant = defaultBackground;
       compositionSettings = {
         center = {
-          PartialBlur = "true";
-          FullBlur = "";
-          HaveFormBackground = "false";
           FormPosition = "center";
           VirtualKeyboardPosition = "center";
         };
         left = {
-          PartialBlur = "false";
-          FullBlur = "";
-          HaveFormBackground = "true";
           FormPosition = "left";
           VirtualKeyboardPosition = "left";
         };
         right = {
+          FormPosition = "right";
+          VirtualKeyboardPosition = "right";
+        };
+      };
+      formStyleSettings = {
+        solid = {
           PartialBlur = "false";
           FullBlur = "";
           HaveFormBackground = "true";
-          FormPosition = "right";
-          VirtualKeyboardPosition = "right";
+        };
+        blur = {
+          PartialBlur = "true";
+          FullBlur = "";
+          HaveFormBackground = "true";
+        };
+      };
+      backgroundPlacementSettings = {
+        fill = {
+          CropBackground = "true";
+          BackgroundHorizontalAlignment = "center";
+          BackgroundVerticalAlignment = "center";
+        };
+        fit = {
+          CropBackground = "false";
+          BackgroundHorizontalAlignment = "center";
+          BackgroundVerticalAlignment = "center";
+        };
+        top = {
+          CropBackground = "false";
+          BackgroundHorizontalAlignment = "center";
+          BackgroundVerticalAlignment = "top";
+        };
+        bottom = {
+          CropBackground = "false";
+          BackgroundHorizontalAlignment = "center";
+          BackgroundVerticalAlignment = "bottom";
+        };
+        left = {
+          CropBackground = "false";
+          BackgroundHorizontalAlignment = "left";
+          BackgroundVerticalAlignment = "center";
+        };
+        right = {
+          CropBackground = "false";
+          BackgroundHorizontalAlignment = "right";
+          BackgroundVerticalAlignment = "center";
+        };
+        top-left = {
+          CropBackground = "false";
+          BackgroundHorizontalAlignment = "left";
+          BackgroundVerticalAlignment = "top";
+        };
+        top-right = {
+          CropBackground = "false";
+          BackgroundHorizontalAlignment = "right";
+          BackgroundVerticalAlignment = "top";
+        };
+        bottom-left = {
+          CropBackground = "false";
+          BackgroundHorizontalAlignment = "left";
+          BackgroundVerticalAlignment = "bottom";
+        };
+        bottom-right = {
+          CropBackground = "false";
+          BackgroundHorizontalAlignment = "right";
+          BackgroundVerticalAlignment = "bottom";
         };
       };
       supportedSystems = [
@@ -121,6 +194,8 @@
         {
           background ? null,
           composition ? defaultComposition,
+          formStyle ? defaultFormStyle,
+          backgroundPlacement ? defaultBackgroundPlacement,
           font ? defaultFont,
           variant ? null,
         }:
@@ -144,10 +219,14 @@
               selectedBackgroundPath
             else
               "Previews/${defaultBackground}.png";
-          selectedSettings = compositionSettings.${selectedComposition} // {
-            Background = selectedBackgroundPath;
-            Font = font;
-          };
+          selectedSettings =
+            compositionSettings.${selectedComposition}
+            // {
+              Background = selectedBackgroundPath;
+              Font = font;
+            }
+            // formStyleSettings.${formStyle}
+            // backgroundPlacementSettings.${backgroundPlacement};
           setSelectedConfig = pkgs.lib.concatStringsSep "\n" (
             pkgs.lib.mapAttrsToList (key: value: ''
               sed -i 's|^${key}=.*|${key}="${value}"|' "$themeDir/Themes/selected.conf"
@@ -155,6 +234,8 @@
           );
         in
         assert builtins.elem selectedBackground backgrounds;
+        assert builtins.elem formStyle formStyles;
+        assert builtins.elem backgroundPlacement backgroundPlacements;
         assert builtins.elem font fontFamilies;
         assert builtins.hasAttr defaultBackground backgroundFileById;
         assert builtins.hasAttr selectedComposition compositionSettings;
@@ -206,7 +287,12 @@
             if cfg.package == null then
               self.lib.mkSddmTheme pkgs {
                 background = selectedBackground;
-                inherit (cfg) composition font;
+                inherit (cfg)
+                  composition
+                  formStyle
+                  backgroundPlacement
+                  font
+                  ;
               }
             else
               cfg.package;
@@ -221,10 +307,22 @@
               description = "Theme layout composition.";
             };
 
+            formStyle = lib.mkOption {
+              type = lib.types.enum formStyles;
+              default = defaultFormStyle;
+              description = "Form background style.";
+            };
+
             background = lib.mkOption {
               type = lib.types.enum backgrounds;
               default = defaultBackground;
               description = "Theme background artwork.";
+            };
+
+            backgroundPlacement = lib.mkOption {
+              type = lib.types.enum backgroundPlacements;
+              default = defaultBackgroundPlacement;
+              description = "Background scaling and alignment.";
             };
 
             font = lib.mkOption {
@@ -242,7 +340,7 @@
             package = lib.mkOption {
               type = lib.types.nullOr lib.types.package;
               default = null;
-              description = "The SDDM theme package to install. If null, a package is generated from the selected composition, background, and font.";
+              description = "The SDDM theme package to install. If null, a package is generated from the selected theme options.";
             };
           };
 
@@ -258,11 +356,15 @@
       lib = {
         inherit
           backgrounds
+          backgroundPlacements
           compositions
           defaultBackground
+          defaultBackgroundPlacement
           defaultComposition
+          defaultFormStyle
           defaultFont
           fontFamilies
+          formStyles
           variants
           defaultVariant
           ;

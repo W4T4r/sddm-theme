@@ -16,11 +16,22 @@ readonly METADATA="$THEMES_DIR/$THEME_NAME/metadata.desktop"
 readonly DATE=$(date +%s)
 
 readonly DEFAULT_COMPOSITION="center"
+readonly DEFAULT_FORM_STYLE="solid"
 readonly DEFAULT_BACKGROUND="nixos-gear"
+readonly DEFAULT_BACKGROUND_PLACEMENT="fill"
 readonly DEFAULT_FONT="Open Sans"
 
 readonly -a COMPOSITIONS=(
     "center" "left" "right"
+)
+
+readonly -a FORM_STYLES=(
+    "solid" "blur"
+)
+
+readonly -a BACKGROUND_PLACEMENTS=(
+    "fill" "fit" "top" "bottom" "left" "right"
+    "top-left" "top-right" "bottom-left" "bottom-right"
 )
 
 readonly -a FONTS=(
@@ -245,23 +256,14 @@ apply_composition() {
 
     case "$composition" in
         center)
-            set_conf_value "$file" "PartialBlur" "true"
-            set_conf_value "$file" "FullBlur" ""
-            set_conf_value "$file" "HaveFormBackground" "false"
             set_conf_value "$file" "FormPosition" "center"
             set_conf_value "$file" "VirtualKeyboardPosition" "center"
             ;;
         left)
-            set_conf_value "$file" "PartialBlur" "false"
-            set_conf_value "$file" "FullBlur" ""
-            set_conf_value "$file" "HaveFormBackground" "true"
             set_conf_value "$file" "FormPosition" "left"
             set_conf_value "$file" "VirtualKeyboardPosition" "left"
             ;;
         right)
-            set_conf_value "$file" "PartialBlur" "false"
-            set_conf_value "$file" "FullBlur" ""
-            set_conf_value "$file" "HaveFormBackground" "true"
             set_conf_value "$file" "FormPosition" "right"
             set_conf_value "$file" "VirtualKeyboardPosition" "right"
             ;;
@@ -272,11 +274,97 @@ apply_composition() {
     esac
 }
 
+apply_form_style() {
+    local file="$1"
+    local form_style="$2"
+
+    case "$form_style" in
+        solid)
+            set_conf_value "$file" "PartialBlur" "false"
+            set_conf_value "$file" "FullBlur" ""
+            set_conf_value "$file" "HaveFormBackground" "true"
+            ;;
+        blur)
+            set_conf_value "$file" "PartialBlur" "true"
+            set_conf_value "$file" "FullBlur" ""
+            set_conf_value "$file" "HaveFormBackground" "true"
+            ;;
+        *)
+            error "Unknown form style: $form_style"
+            return 1
+            ;;
+    esac
+}
+
+apply_background_placement() {
+    local file="$1"
+    local background_placement="$2"
+
+    case "$background_placement" in
+        fill)
+            set_conf_value "$file" "CropBackground" "true"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "center"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "center"
+            ;;
+        fit)
+            set_conf_value "$file" "CropBackground" "false"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "center"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "center"
+            ;;
+        top)
+            set_conf_value "$file" "CropBackground" "false"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "center"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "top"
+            ;;
+        bottom)
+            set_conf_value "$file" "CropBackground" "false"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "center"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "bottom"
+            ;;
+        left)
+            set_conf_value "$file" "CropBackground" "false"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "left"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "center"
+            ;;
+        right)
+            set_conf_value "$file" "CropBackground" "false"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "right"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "center"
+            ;;
+        top-left)
+            set_conf_value "$file" "CropBackground" "false"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "left"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "top"
+            ;;
+        top-right)
+            set_conf_value "$file" "CropBackground" "false"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "right"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "top"
+            ;;
+        bottom-left)
+            set_conf_value "$file" "CropBackground" "false"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "left"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "bottom"
+            ;;
+        bottom-right)
+            set_conf_value "$file" "CropBackground" "false"
+            set_conf_value "$file" "BackgroundHorizontalAlignment" "right"
+            set_conf_value "$file" "BackgroundVerticalAlignment" "bottom"
+            ;;
+        *)
+            error "Unknown background placement: $background_placement"
+            return 1
+            ;;
+    esac
+}
+
 write_selected_theme() {
     local theme_root="$1"
     local composition="$2"
     local background="$3"
-    local font="$4"
+    local form_style="$4"
+    local background_placement="$5"
+    local font="$6"
     local template="$theme_root/Themes/${DEFAULT_BACKGROUND}.conf"
     local output="$theme_root/Themes/selected.conf"
     local background_file
@@ -295,6 +383,8 @@ write_selected_theme() {
     set_conf_value "$tmp" "Background" "$background_path"
     set_conf_value "$tmp" "Font" "$font"
     apply_composition "$tmp" "$composition"
+    apply_form_style "$tmp" "$form_style"
+    apply_background_placement "$tmp" "$background_placement"
 
     sudo install -m 0644 "$tmp" "$output"
     rm -f "$tmp"
@@ -305,24 +395,30 @@ write_selected_theme() {
         "$METADATA"
 }
 
-# Select theme composition, background, and font
+# Select theme composition, form style, background, placement, and font
 select_theme() {
     [[ ! -f "$METADATA" ]] && { error "Install theme first"; return 1; }
 
     local composition
     local background
+    local form_style
+    local background_placement
     local font
     local -a backgrounds
 
     composition=$(choose "${COMPOSITIONS[@]}" || echo "$DEFAULT_COMPOSITION")
+    form_style=$(choose "${FORM_STYLES[@]}" || echo "$DEFAULT_FORM_STYLE")
     mapfile -t backgrounds < <(list_backgrounds "$THEMES_DIR/$THEME_NAME")
     [[ ${#backgrounds[@]} -eq 0 ]] && { error "No supported backgrounds found"; return 1; }
     background=$(choose "${backgrounds[@]}" || echo "$DEFAULT_BACKGROUND")
+    background_placement=$(choose "${BACKGROUND_PLACEMENTS[@]}" || echo "$DEFAULT_BACKGROUND_PLACEMENT")
     font=$(choose "${FONTS[@]}" || echo "$DEFAULT_FONT")
 
-    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background" "$font"
+    write_selected_theme "$THEMES_DIR/$THEME_NAME" "$composition" "$background" "$form_style" "$background_placement" "$font"
     info "Selected composition: $composition"
+    info "Selected form style: $form_style"
     info "Selected background: $background"
+    info "Selected background placement: $background_placement"
     info "Selected font: $font"
 }
 
@@ -489,7 +585,7 @@ main() {
             "📥 Clone Repository" \
             "📂 Install Theme" \
             "🔧 Enable SDDM Service" \
-            "🎨 Select Composition, Background, and Font" \
+            "🎨 Select Theme Options" \
             "✨ Preview the set theme" \
             "❌ Exit")
 
@@ -499,7 +595,7 @@ main() {
             "📥 Clone Repository") clone_repo ;;
             "📂 Install Theme") install_theme ;;
             "🔧 Enable SDDM Service") enable_sddm ;;
-            "🎨 Select Composition, Background, and Font") select_theme ;;
+            "🎨 Select Theme Options") select_theme ;;
             "✨ Preview the set theme") preview_theme;;
             "❌ Exit") info "Goodbye!"; exit 0 ;;
         esac

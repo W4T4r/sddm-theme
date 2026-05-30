@@ -30,9 +30,19 @@ Available compositions:
 | --- | --- | --- |
 | ![center composition](./Previews/composition-center.png) | ![left composition](./Previews/composition-left.png) | ![right composition](./Previews/composition-right.png) |
 
+## Form Styles
+
+The default form style is `solid`.
+
+Available form styles:
+
+- `solid`
+- `blur`
+
 ## Backgrounds
 
 The default background is `nixos-gear`.
+The default background placement is `fill`.
 
 Backgrounds are discovered automatically from `Backgrounds/`. The background
 ID is the filename without its extension, so `Backgrounds/neon-city.webp`
@@ -40,6 +50,19 @@ becomes `neon-city`.
 
 Keep background IDs unique. For example, do not add both `neon-city.png` and
 `neon-city.webp`.
+
+Available background placements:
+
+- `fill`
+- `fit`
+- `top`
+- `bottom`
+- `left`
+- `right`
+- `top-left`
+- `top-right`
+- `bottom-left`
+- `bottom-right`
 
 ### Bundled Backgrounds
 
@@ -120,15 +143,14 @@ Then install and select it in NixOS:
 ```nix
 { inputs, pkgs, ... }: {
   environment.systemPackages = [
-    inputs.sddm-theme.packages.${pkgs.system}.default
+    inputs.sddm-theme.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   services.displayManager.sddm.theme = "sddm-theme";
 }
 ```
 
-Or import the included NixOS module and select a composition, background, and
-font:
+Or import the included NixOS module and select theme options:
 
 ```nix
 { inputs, ... }: {
@@ -138,15 +160,17 @@ font:
 
   services.sddmTheme.enable = true;
   services.sddmTheme.composition = "left";
+  services.sddmTheme.formStyle = "solid";
   services.sddmTheme.background = "nixos-catppuccin-mocha";
+  services.sddmTheme.backgroundPlacement = "fill";
   services.sddmTheme.font = "Orbitron";
 }
 ```
 
 The module installs the theme package, sets
 `services.displayManager.sddm.theme = "sddm-theme"`, generates
-`Themes/selected.conf` from the selected composition, background, and font, and
-patches `metadata.desktop` to point at it.
+`Themes/selected.conf` from the selected options, and patches
+`metadata.desktop` to point at it.
 
 `services.sddmTheme.variant` is still accepted as a deprecated alias for
 `services.sddmTheme.background`.
@@ -194,8 +218,7 @@ Preview:
 sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/sddm-theme/
 ```
 
-The installer menu can also install the theme and select a composition,
-background, and font interactively:
+The installer menu can also install the theme and select options interactively:
 
 ```sh
 ./setup.sh
