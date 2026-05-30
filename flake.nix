@@ -31,7 +31,7 @@
       defaultFormWidthRatio = 0.45;
       defaultFontSize = 13;
       defaultRoundCorners = 18;
-      defaultClockFormat = "iso";
+      defaultClockFormat = "24h";
       defaultClockLocale = "en_US";
       defaultSystemButtonsVisible = false;
       defaultVirtualKeyboardVisible = false;

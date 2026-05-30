@@ -60,7 +60,7 @@ Color values accept Qt color strings in `#RRGGBB` or `#AARRGGBB` form.
 | `form.widthRatio` | `0.45` | Number greater than `0.0` and up to `1.0` |
 | `font.size` | `13` | Positive number |
 | `roundCorners` | `18` | Number greater than or equal to `0` |
-| `clock.format` | `iso` | `24h`, `12h`, `iso`, `locale` |
+| `clock.format` | `24h` | `24h`, `12h`, `iso`, `locale` |
 | `clock.locale` | `en_US` | Locale string, such as `en_US` |
 | `systemButtons.visible` | `false` | `true`, `false` |
 | `virtualKeyboard.visible` | `false` | `true`, `false` |
@@ -227,7 +227,7 @@ Or import the included NixOS module and select theme options:
     };
     roundCorners = 18;
     clock = {
-      format = "iso";
+      format = "24h";
       locale = "en_US";
     };
     systemButtons = {
