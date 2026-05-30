@@ -47,6 +47,7 @@ Nix users can set them directly, and every option has a default.
 | Option | Default | Values |
 | --- | --- | --- |
 | `backgroundDim` | `none` | `none`, `light`, `medium`, `dark` |
+| `formBackgroundColor` | `#21222C` | Qt color string, such as `#111827` |
 | `blurStrength` | `normal` | `soft`, `normal`, `strong` |
 | `fontSize` | `normal` | `small`, `normal`, `large` |
 | `roundCorners` | `normal` | `none`, `small`, `normal`, `large` |
@@ -188,6 +189,7 @@ Or import the included NixOS module and select theme options:
   services.sddmTheme.backgroundPlacement = "fill";
   services.sddmTheme.font = "Orbitron";
   services.sddmTheme.backgroundDim = "light";
+  services.sddmTheme.formBackgroundColor = "#111827";
   services.sddmTheme.blurStrength = "normal";
   services.sddmTheme.fontSize = "normal";
   services.sddmTheme.roundCorners = "normal";

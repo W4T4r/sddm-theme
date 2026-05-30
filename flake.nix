@@ -19,6 +19,7 @@
       defaultBackgroundPlacement = "fill";
       defaultFont = "Open Sans";
       defaultBackgroundDim = "none";
+      defaultFormBackgroundColor = "#21222C";
       defaultBlurStrength = "normal";
       defaultFontSize = "normal";
       defaultRoundCorners = "normal";
@@ -308,6 +309,7 @@
           backgroundPlacement ? defaultBackgroundPlacement,
           font ? defaultFont,
           backgroundDim ? defaultBackgroundDim,
+          formBackgroundColor ? defaultFormBackgroundColor,
           blurStrength ? defaultBlurStrength,
           fontSize ? defaultFontSize,
           roundCorners ? defaultRoundCorners,
@@ -339,6 +341,7 @@
             // {
               Background = selectedBackgroundPath;
               Font = font;
+              FormBackgroundColor = formBackgroundColor;
             }
             // formStyleSettings.${formStyle}
             // backgroundPlacementSettings.${backgroundPlacement}
@@ -421,6 +424,7 @@
                   backgroundPlacement
                   font
                   backgroundDim
+                  formBackgroundColor
                   blurStrength
                   fontSize
                   roundCorners
@@ -468,6 +472,12 @@
               type = lib.types.enum backgroundDims;
               default = defaultBackgroundDim;
               description = "Background dim preset.";
+            };
+
+            formBackgroundColor = lib.mkOption {
+              type = lib.types.str;
+              default = defaultFormBackgroundColor;
+              description = "Solid form background color.";
             };
 
             blurStrength = lib.mkOption {
@@ -530,6 +540,7 @@
           defaultBackground
           defaultBackgroundDim
           defaultBackgroundPlacement
+          defaultFormBackgroundColor
           defaultBlurStrength
           defaultClockFormat
           defaultComposition
